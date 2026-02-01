@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <!-- iPhone Safari用のビューポート設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <!-- PWA対応：ホーム画面追加時の設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="家族ポータル">
+    <meta name="theme-color" content="#4A90A4">
+
+    <!-- ファビコン・アイコン -->
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <link rel="icon" type="image/png" href="./icons/icon-192.png">
+
+    <!-- PWAマニフェスト（相対パスに修正） -->
+    <link rel="manifest" href="./manifest.json">
+
+    <title>家族ポータル</title>
+
+    <!-- スタイルシート -->
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <!-- ============================================
+         アプリケーションコンテナ
+         単一ページ内で画面を切り替えるSPA方式
+    ============================================ -->
+    <div id="app">
+
+        <!-- ============================================
+             ヘッダー（共通）
+        ============================================ -->
+        <header id="header">
+            <button id="back-btn" class="header-btn hidden" aria-label="戻る">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </button>
+            <h1 id="page-title">家族ポータル</h1>
+            <button id="refresh-btn" class="header-btn" aria-label="更新">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6"/>
+                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- ============================================
+             メインコンテンツエリア
+        ============================================ -->
+        <main id="main-content">
+
+            <!-- ========== ポータル（トップページ） ========== -->
+            <section id="page-portal" class="page active">
+                <!-- ピン留めメモ表示エリア -->
+                <div id="pinned-memos" class="pinned-section">
+                    <h2 class="section-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 4l-1.5 1.5L17 8l1.5-1.5L16 4zm-3.5 3.5L5 15v4h4l7.5-7.5-4-4z"/>
+                        </svg>
+                        ピン留めメモ
+                    </h2>
+                    <div id="pinned-list" class="pinned-list">
+                        <p class="empty-message">読み込み中...</p>
+                    </div>
+                </div>
+
+                <!-- アプリへのリンクボタン -->
+                <div class="app-grid">
+                    <button class="app-card" data-page="memo">
+                        <div class="app-icon memo-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                            </svg>
+                        </div>
+                        <span class="app-name">共有メモ</span>
+                    </button>
+
+                    <button class="app-card" data-page="wishlist">
+                        <div class="app-icon wishlist-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                        </div>
+                        <span class="app-name">今年やりたいこと</span>
+                    </button>
+
+                    <button class="app-card" data-page="shopping">
+                        <div class="app-icon shopping-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="9" cy="21" r="1"/>
+                                <circle cx="20" cy="21" r="1"/>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+                            </svg>
+                        </div>
+                        <span class="app-name">買い物リスト</span>
+                    </button>
+
+                    <button class="app-card" data-page="settings">
+                        <div class="app-icon settings-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                            </svg>
+                        </div>
+                        <span class="app-name">設定</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- ========== 共有メモアプリ ========== -->
+            <section id="page-memo" class="page">
+                <!-- メモ入力フォーム -->
+                <div class="input-section">
+                    <textarea id="memo-input" placeholder="メモを入力..." rows="3"></textarea>
+                    <div class="input-actions">
+                        <label class="pin-toggle">
+                            <input type="checkbox" id="memo-pin-check">
+                            <span class="pin-label">ピン留め</span>
+                        </label>
+                        <button id="memo-add-btn" class="primary-btn">追加</button>
+                    </div>
+                </div>
+
+                <!-- メモ一覧 -->
+                <div id="memo-list" class="item-list">
+                    <p class="empty-message">読み込み中...</p>
+                </div>
+            </section>
+
+            <!-- ========== 今年やりたいことリスト ========== -->
+            <section id="page-wishlist" class="page">
+                <!-- 年選択 -->
+                <div class="year-selector">
+                    <button id="prev-year" class="year-btn">&lt;</button>
+                    <span id="current-year">2024</span>
+                    <button id="next-year" class="year-btn">&gt;</button>
+                </div>
+
+                <!-- 入力フォーム -->
+                <div class="input-section">
+                    <input type="text" id="wish-input" placeholder="やりたいことを入力..." />
+                    <button id="wish-add-btn" class="primary-btn">追加</button>
+                </div>
+
+                <!-- フィルター -->
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">すべて</button>
+                    <button class="filter-tab" data-filter="not_started">未着手</button>
+                    <button class="filter-tab" data-filter="in_progress">進行中</button>
+                    <button class="filter-tab" data-filter="completed">完了</button>
+                </div>
+
+                <!-- リスト -->
+                <div id="wish-list" class="item-list">
+                    <p class="empty-message">読み込み中...</p>
+                </div>
+            </section>
+
+            <!-- ========== 買い物リスト ========== -->
+            <section id="page-shopping" class="page">
+                <!-- 入力フォーム -->
+                <div class="input-section">
+                    <input type="text" id="shopping-input" placeholder="買い物アイテムを入力..." />
+                    <button id="shopping-add-btn" class="primary-btn">追加</button>
+                </div>
+
+                <!-- タブ切り替え -->
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="active">買うもの</button>
+                    <button class="filter-tab" data-filter="completed">購入済み</button>
+                </div>
+
+                <!-- リスト -->
+                <div id="shopping-list" class="item-list">
+                    <p class="empty-message">読み込み中...</p>
+                </div>
+            </section>
+
+            <!-- ========== 設定画面 ========== -->
+            <section id="page-settings" class="page">
+                <div class="settings-section">
+                    <h2 class="section-title">API設定（必須）</h2>
+                    <div class="setting-item">
+                        <label for="api-url">Google Apps Script URL</label>
+                        <input type="url" id="api-url" placeholder="https://script.google.com/macros/s/xxxxx/exec">
+                        <p class="setting-hint">
+                            デプロイしたWebアプリのURLを入力してください。<br>
+                            URLは「/exec」で終わる形式です。
+                        </p>
+                    </div>
+                    <div class="button-group">
+                        <button id="save-settings" class="primary-btn">保存</button>
+                        <button id="test-connection" class="secondary-btn">接続テスト</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h2 class="section-title">データ管理</h2>
+                    <button id="clear-cache" class="secondary-btn">設定をクリア</button>
+                    <p class="setting-hint">
+                        ローカルの設定のみクリアします。<br>
+                        スプレッドシートのデータは削除されません。
+                    </p>
+                </div>
+
+                <div class="settings-section">
+                    <h2 class="section-title">セットアップ手順</h2>
+                    <ol class="setup-steps">
+                        <li>Googleスプレッドシートを新規作成</li>
+                        <li>拡張機能 → Apps Script を開く</li>
+                        <li>Code.gs の内容を貼り付け</li>
+                        <li>SPREADSHEET_ID を設定</li>
+                        <li>setupSheets() を実行</li>
+                        <li>デプロイ → 新しいデプロイ</li>
+                        <li>Webアプリとして公開</li>
+                        <li>URLをここに貼り付け</li>
+                    </ol>
+                </div>
+
+                <div class="settings-section">
+                    <h2 class="section-title">このアプリについて</h2>
+                    <p class="app-version">家族ポータル v2.0.0</p>
+                    <p class="setting-hint">夫婦2人で情報を共有するためのシンプルなポータルアプリです。</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- ============================================
+             ローディングオーバーレイ
+        ============================================ -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>読み込み中...</p>
+        </div>
+
+        <!-- ============================================
+             トースト通知
+        ============================================ -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <!-- JavaScript（単一ファイルに統合） -->
+    <script src="./js/app.js"></script>
+</body>
+</html>

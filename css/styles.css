@@ -1,0 +1,838 @@
+/* ============================================
+   家族ポータル - スタイルシート
+   iPhone Safari向けに最適化
+============================================ */
+
+/* ============================================
+   CSS変数（カスタムプロパティ）
+   テーマカラーはここで一括管理
+============================================ */
+:root {
+    /* メインカラー */
+    --primary-color: #4A90A4;
+    --primary-dark: #3A7A94;
+    --primary-light: #6AB0C4;
+
+    /* 背景色 */
+    --bg-color: #F5F7FA;
+    --card-bg: #FFFFFF;
+    --header-bg: #4A90A4;
+
+    /* テキスト色 */
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-light: #999999;
+    --text-white: #FFFFFF;
+
+    /* アクセントカラー（各アプリ用） */
+    --memo-color: #5C6BC0;
+    --wishlist-color: #FF7043;
+    --shopping-color: #66BB6A;
+    --settings-color: #78909C;
+
+    /* ステータスカラー */
+    --status-not-started: #E0E0E0;
+    --status-in-progress: #FFB74D;
+    --status-completed: #81C784;
+    --status-pinned: #EF5350;
+
+    /* その他 */
+    --border-color: #E0E0E0;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+
+    /* セーフエリア（iPhone用） */
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+    --safe-left: env(safe-area-inset-left);
+    --safe-right: env(safe-area-inset-right);
+}
+
+/* ============================================
+   リセット・基本スタイル
+============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    /* iPhoneのバウンススクロールを制御 */
+    overscroll-behavior: none;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    /* iPhone セーフエリア対応 */
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+}
+
+/* PWA表示時のスタンドアロンモード対応 */
+@media all and (display-mode: standalone) {
+    body {
+        /* スタンドアロン時の追加スタイル */
+    }
+}
+
+/* ============================================
+   アプリコンテナ
+============================================ */
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   ヘッダー
+============================================ */
+#header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--header-bg);
+    color: var(--text-white);
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    /* iPhoneのnotch対応 */
+    padding-top: calc(12px + var(--safe-top));
+}
+
+#page-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    flex: 1;
+    text-align: center;
+}
+
+.header-btn {
+    background: none;
+    border: none;
+    color: var(--text-white);
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-btn:active {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.header-btn.hidden {
+    visibility: hidden;
+}
+
+/* ============================================
+   メインコンテンツ
+============================================ */
+#main-content {
+    flex: 1;
+    padding: 16px;
+    padding-bottom: calc(16px + var(--safe-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   ページ切り替え
+============================================ */
+.page {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.page.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   ポータル画面
+============================================ */
+
+/* ピン留めセクション */
+.pinned-section {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+}
+
+.section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.section-title svg {
+    color: var(--status-pinned);
+}
+
+.pinned-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pinned-item {
+    background: #FFF3E0;
+    border-left: 3px solid var(--status-pinned);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+.empty-message {
+    color: var(--text-light);
+    font-size: 0.875rem;
+    text-align: center;
+    padding: 8px;
+}
+
+/* アプリグリッド */
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.app-card {
+    background: var(--card-bg);
+    border: none;
+    border-radius: var(--radius);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.app-card:active {
+    transform: scale(0.96);
+}
+
+.app-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.memo-icon {
+    background: linear-gradient(135deg, var(--memo-color), #7986CB);
+}
+
+.wishlist-icon {
+    background: linear-gradient(135deg, var(--wishlist-color), #FF8A65);
+}
+
+.shopping-icon {
+    background: linear-gradient(135deg, var(--shopping-color), #81C784);
+}
+
+.settings-icon {
+    background: linear-gradient(135deg, var(--settings-color), #90A4AE);
+}
+
+.app-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+/* ============================================
+   共通：入力セクション
+============================================ */
+.input-section {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+
+.input-section input[type="text"],
+.input-section input[type="url"],
+.input-section textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: inherit;
+    resize: none;
+    transition: border-color 0.2s;
+}
+
+.input-section input:focus,
+.input-section textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.input-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.pin-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.pin-toggle input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--status-pinned);
+}
+
+.pin-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* ボタン */
+.primary-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.primary-btn:active {
+    background: var(--primary-dark);
+}
+
+.secondary-btn {
+    background: var(--bg-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* ============================================
+   共通：アイテムリスト
+============================================ */
+.item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* メモアイテム */
+.memo-item {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    position: relative;
+}
+
+.memo-item.pinned {
+    border-left: 3px solid var(--status-pinned);
+}
+
+.memo-content {
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.memo-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.memo-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.action-btn:active {
+    background: var(--bg-color);
+}
+
+.action-btn.pin-btn.active {
+    color: var(--status-pinned);
+}
+
+.action-btn.delete-btn {
+    color: #E57373;
+}
+
+/* ============================================
+   やりたいことリスト
+============================================ */
+
+/* 年セレクター */
+.year-selector {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 16px;
+}
+
+.year-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.year-btn:active {
+    background: var(--bg-color);
+}
+
+#current-year {
+    font-size: 1.25rem;
+    font-weight: 600;
+    min-width: 80px;
+    text-align: center;
+}
+
+/* フィルタータブ */
+.filter-tabs {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+
+.filter-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 10px 8px;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.filter-tab.active {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+/* やりたいことアイテム */
+.wish-item {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+}
+
+.wish-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.wish-title {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    flex: 1;
+}
+
+.wish-status {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.wish-status.not_started {
+    background: var(--status-not-started);
+    color: var(--text-secondary);
+}
+
+.wish-status.in_progress {
+    background: var(--status-in-progress);
+    color: #5D4037;
+}
+
+.wish-status.completed {
+    background: var(--status-completed);
+    color: #1B5E20;
+}
+
+.wish-comment {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin: 8px 0;
+    padding: 8px;
+    background: var(--bg-color);
+    border-radius: var(--radius-sm);
+}
+
+.wish-comment:empty {
+    display: none;
+}
+
+.wish-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.status-select {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    background: white;
+}
+
+/* ============================================
+   買い物リスト
+============================================ */
+.shopping-item {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shopping-item.completed {
+    opacity: 0.6;
+}
+
+.shopping-checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.shopping-checkbox.checked {
+    background: var(--shopping-color);
+    border-color: var(--shopping-color);
+}
+
+.shopping-checkbox.checked::after {
+    content: '✓';
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.shopping-name {
+    flex: 1;
+    font-size: 0.9375rem;
+}
+
+.shopping-item.completed .shopping-name {
+    text-decoration: line-through;
+    color: var(--text-light);
+}
+
+/* ============================================
+   設定画面
+============================================ */
+.settings-section {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+}
+
+.setting-item {
+    margin-bottom: 16px;
+}
+
+.setting-item label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.setting-item input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+}
+
+.setting-hint {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 6px;
+}
+
+.app-version {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* ボタングループ */
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.button-group .primary-btn,
+.button-group .secondary-btn {
+    flex: 1;
+}
+
+/* セットアップ手順リスト */
+.setup-steps {
+    padding-left: 20px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.setup-steps li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.setup-steps li::marker {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* ============================================
+   ローディング
+============================================ */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading.hidden {
+    display: none;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading p {
+    margin-top: 16px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+/* ============================================
+   トースト通知
+============================================ */
+.toast {
+    position: fixed;
+    bottom: calc(24px + var(--safe-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 0.875rem;
+    z-index: 1001;
+    animation: toastIn 0.3s ease;
+}
+
+.toast.hidden {
+    display: none;
+}
+
+@keyframes toastIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* ============================================
+   レスポンシブ対応
+============================================ */
+
+/* 小さい画面（iPhone SE など） */
+@media (max-width: 375px) {
+    .app-grid {
+        gap: 12px;
+    }
+
+    .app-card {
+        padding: 20px 12px;
+    }
+
+    .app-icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .filter-tab {
+        font-size: 0.75rem;
+        padding: 8px 4px;
+    }
+}
+
+/* 大きい画面（iPad など） */
+@media (min-width: 768px) {
+    #app {
+        max-width: 600px;
+        margin: 20px auto;
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .app-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ============================================
+   ダークモード対応（拡張案）
+   ※ 将来的に実装する場合のテンプレート
+============================================ */
+/*
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #1A1A2E;
+        --card-bg: #16213E;
+        --text-primary: #EAEAEA;
+        --text-secondary: #B0B0B0;
+        --border-color: #2A3A5A;
+    }
+}
+*/
+
+/* ============================================
+   ユーティリティクラス
+============================================ */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-16 {
+    margin-top: 16px;
+}
+
+.mb-16 {
+    margin-bottom: 16px;
+}
