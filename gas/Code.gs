@@ -57,6 +57,15 @@ function setupSheets() {
     shoppingSheet.setFrozenRows(1);
   }
 
+  // 設定シート（トップ画像のfileIdなどを保存）
+  let settingsSheet = ss.getSheetByName('Settings');
+  if (!settingsSheet) {
+    settingsSheet = ss.insertSheet('Settings');
+    settingsSheet.appendRow(['key', 'value', 'updatedAt']);
+    settingsSheet.getRange(1, 1, 1, 3).setFontWeight('bold');
+    settingsSheet.setFrozenRows(1);
+  }
+
   Logger.log('セットアップ完了！シートを確認してください。');
 }
 
@@ -140,6 +149,17 @@ function handleRequest(e) {
         break;
       case 'updateShopping':
         result = updateShopping(data);
+        break;
+
+      // === トップ画像 ===
+      case 'uploadTopImage':
+        result = uploadTopImage(data);
+        break;
+      case 'getTopImage':
+        result = getTopImage();
+        break;
+      case 'deleteTopImage':
+        result = deleteTopImage();
         break;
 
       // === テスト用 ===
@@ -490,4 +510,193 @@ function addTestData() {
   });
 
   Logger.log('テストデータを追加しました');
+}
+
+/* ============================================
+   トップ画像関連
+
+   画像は Google Drive に保存し、fileId のみを
+   スプレッドシートに記録する。
+   画像取得時は GAS がプロキシとして機能し、
+   Base64 形式で返却する。
+
+   ★ Google Drive 上の画像は「限定公開」のまま。
+   ★ GAS経由でしかアクセスできないため安全。
+============================================ */
+
+/**
+ * トップ画像をアップロード
+ * @param {object} data - { base64: 'data:image/...', fileName: 'image.jpg' }
+ * @returns {object} { success: true, fileId: '...' }
+ */
+function uploadTopImage(data) {
+  if (!data || !data.base64) {
+    return { success: false, error: 'No image data provided' };
+  }
+
+  try {
+    // Base64データをデコード
+    // フォーマット: "data:image/jpeg;base64,/9j/4AAQ..."
+    const matches = data.base64.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      return { success: false, error: 'Invalid base64 format' };
+    }
+
+    const mimeType = matches[1];
+    const base64Data = matches[2];
+    const blob = Utilities.newBlob(
+      Utilities.base64Decode(base64Data),
+      mimeType,
+      data.fileName || 'top_image.jpg'
+    );
+
+    // 既存の画像があれば削除
+    const oldFileId = getSettingValue('topImageFileId');
+    if (oldFileId) {
+      try {
+        DriveApp.getFileById(oldFileId).setTrashed(true);
+      } catch (e) {
+        // 古いファイルが見つからなくても続行
+        Logger.log('Old file not found: ' + oldFileId);
+      }
+    }
+
+    // Google Driveに保存（マイドライブ直下）
+    // ★ ファイルは「限定公開」（デフォルト）のまま
+    const file = DriveApp.createFile(blob);
+    const fileId = file.getId();
+
+    // fileIdをスプレッドシートに保存
+    setSettingValue('topImageFileId', fileId);
+
+    return { success: true, fileId: fileId };
+
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * トップ画像を取得
+ * @returns {object} { success: true, base64: 'data:image/...', hasImage: true }
+ */
+function getTopImage() {
+  try {
+    const fileId = getSettingValue('topImageFileId');
+
+    if (!fileId) {
+      return { success: true, hasImage: false };
+    }
+
+    // Google Driveから画像を取得
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    const mimeType = blob.getContentType();
+    const base64Data = Utilities.base64Encode(blob.getBytes());
+
+    return {
+      success: true,
+      hasImage: true,
+      base64: 'data:' + mimeType + ';base64,' + base64Data,
+      fileName: file.getName()
+    };
+
+  } catch (error) {
+    // ファイルが見つからない場合
+    if (error.toString().includes('not found') || error.toString().includes('does not exist')) {
+      // 無効なfileIdをクリア
+      setSettingValue('topImageFileId', '');
+      return { success: true, hasImage: false };
+    }
+    return { success: false, error: error.toString() };
+  }
+}
+
+/**
+ * トップ画像を削除
+ * @returns {object} { success: true }
+ */
+function deleteTopImage() {
+  try {
+    const fileId = getSettingValue('topImageFileId');
+
+    if (fileId) {
+      try {
+        DriveApp.getFileById(fileId).setTrashed(true);
+      } catch (e) {
+        // ファイルが見つからなくても続行
+      }
+    }
+
+    // 設定をクリア
+    setSettingValue('topImageFileId', '');
+
+    return { success: true };
+
+  } catch (error) {
+    return { success: false, error: error.toString() };
+  }
+}
+
+/* ============================================
+   設定値の読み書き（Settingsシート）
+============================================ */
+
+/**
+ * 設定値を取得
+ * @param {string} key - 設定キー
+ * @returns {string} 設定値（なければ空文字）
+ */
+function getSettingValue(key) {
+  const sheet = getSpreadsheet().getSheetByName('Settings');
+  if (!sheet) return '';
+
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === key) {
+      return data[i][1] || '';
+    }
+  }
+  return '';
+}
+
+/**
+ * 設定値を保存
+ * @param {string} key - 設定キー
+ * @param {string} value - 設定値
+ */
+function setSettingValue(key, value) {
+  const sheet = getSpreadsheet().getSheetByName('Settings');
+  if (!sheet) {
+    // Settingsシートがなければ作成
+    const ss = getSpreadsheet();
+    const newSheet = ss.insertSheet('Settings');
+    newSheet.appendRow(['key', 'value', 'updatedAt']);
+    newSheet.getRange(1, 1, 1, 3).setFontWeight('bold');
+    newSheet.setFrozenRows(1);
+    newSheet.appendRow([key, value, new Date().toISOString()]);
+    return;
+  }
+
+  const data = sheet.getDataRange().getValues();
+
+  // 既存のキーを探す
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === key) {
+      sheet.getRange(i + 1, 2, 1, 2).setValues([[value, new Date().toISOString()]]);
+      return;
+    }
+  }
+
+  // 新規追加
+  sheet.appendRow([key, value, new Date().toISOString()]);
+}
+
+/**
+ * 画像アップロードのテスト（GASエディタから実行）
+ */
+function testImageUpload() {
+  // 現在のトップ画像を確認
+  const result = getTopImage();
+  Logger.log('Current top image: ' + JSON.stringify(result));
 }

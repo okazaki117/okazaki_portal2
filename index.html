@@ -55,6 +55,31 @@
 
             <!-- ========== ポータル（トップページ） ========== -->
             <section id="page-portal" class="page active">
+
+                <!-- トップ画像エリア（GAS経由で取得・非公開） -->
+                <div id="top-image-section" class="top-image-section">
+                    <div id="top-image-container" class="top-image-container">
+                        <!-- 画像がない場合のプレースホルダー -->
+                        <div id="top-image-placeholder" class="top-image-placeholder">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            <p>タップして画像を設定</p>
+                        </div>
+                        <!-- 画像表示エリア -->
+                        <img id="top-image" class="top-image hidden" alt="トップ画像">
+                    </div>
+                    <!-- 画像設定用の非表示input -->
+                    <input type="file" id="top-image-input" accept="image/*" class="hidden">
+                    <!-- 画像設定時の操作ボタン -->
+                    <div id="top-image-actions" class="top-image-actions hidden">
+                        <button id="change-image-btn" class="image-action-btn">変更</button>
+                        <button id="delete-image-btn" class="image-action-btn danger">削除</button>
+                    </div>
+                </div>
+
                 <!-- ピン留めメモ表示エリア -->
                 <div id="pinned-memos" class="pinned-section">
                     <h2 class="section-title">

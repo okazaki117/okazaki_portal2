@@ -266,7 +266,11 @@ function updateHeader(pageName) {
 async function loadPageData(pageName) {
     switch (pageName) {
         case 'portal':
-            await loadPinnedMemos();
+            // トップ画像とピン留めメモを並行して読み込み
+            await Promise.all([
+                loadTopImage(),
+                loadPinnedMemos()
+            ]);
             break;
         case 'memo':
             await loadMemos();
@@ -897,4 +901,211 @@ function setupEventListeners() {
     if (clearCacheBtn) {
         clearCacheBtn.addEventListener('click', clearAllData);
     }
+
+    // トップ画像：コンテナクリックで画像選択
+    const topImageContainer = document.getElementById('top-image-container');
+    if (topImageContainer) {
+        topImageContainer.addEventListener('click', () => {
+            const input = document.getElementById('top-image-input');
+            if (input) input.click();
+        });
+    }
+
+    // トップ画像：ファイル選択
+    const topImageInput = document.getElementById('top-image-input');
+    if (topImageInput) {
+        topImageInput.addEventListener('change', handleTopImageSelect);
+    }
+
+    // トップ画像：変更ボタン
+    const changeImageBtn = document.getElementById('change-image-btn');
+    if (changeImageBtn) {
+        changeImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const input = document.getElementById('top-image-input');
+            if (input) input.click();
+        });
+    }
+
+    // トップ画像：削除ボタン
+    const deleteImageBtn = document.getElementById('delete-image-btn');
+    if (deleteImageBtn) {
+        deleteImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteTopImage();
+        });
+    }
+}
+
+/* ============================================
+   トップ画像機能
+
+   ★ 画像はGoogle Drive（限定公開）に保存
+   ★ 取得はGAS経由でBase64として返却
+   ★ GitHub上のコードには画像URLは含まれない
+============================================ */
+
+/**
+ * トップ画像を読み込み
+ */
+async function loadTopImage() {
+    const container = document.getElementById('top-image-container');
+    const placeholder = document.getElementById('top-image-placeholder');
+    const imageEl = document.getElementById('top-image');
+    const actions = document.getElementById('top-image-actions');
+
+    if (!container || !imageEl) return;
+
+    // API URL未設定時
+    if (!CONFIG.API_URL) {
+        if (placeholder) placeholder.classList.remove('hidden');
+        imageEl.classList.add('hidden');
+        if (actions) actions.classList.add('hidden');
+        return;
+    }
+
+    // ローディング表示
+    container.classList.add('loading');
+
+    try {
+        const result = await apiRequest('getTopImage');
+
+        container.classList.remove('loading');
+
+        if (result && result.hasImage && result.base64) {
+            // 画像を表示
+            imageEl.src = result.base64;
+            imageEl.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+            if (actions) actions.classList.remove('hidden');
+            log('Top image loaded');
+        } else {
+            // 画像なし
+            imageEl.classList.add('hidden');
+            if (placeholder) placeholder.classList.remove('hidden');
+            if (actions) actions.classList.add('hidden');
+        }
+    } catch (error) {
+        container.classList.remove('loading');
+        logError('Failed to load top image:', error);
+    }
+}
+
+/**
+ * 画像選択時の処理
+ */
+async function handleTopImageSelect(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // ファイルサイズチェック（5MB制限）
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        showToast('画像サイズは5MB以下にしてください');
+        return;
+    }
+
+    // 画像タイプチェック
+    if (!file.type.startsWith('image/')) {
+        showToast('画像ファイルを選択してください');
+        return;
+    }
+
+    log('Selected image:', file.name, file.type, file.size);
+
+    showLoading(true);
+
+    try {
+        // ファイルをBase64に変換
+        const base64 = await fileToBase64(file);
+
+        // iPhone写真の場合、サイズが大きいのでリサイズ
+        const resizedBase64 = await resizeImage(base64, 1200);
+
+        // GASにアップロード
+        const result = await apiRequest('uploadTopImage', {
+            base64: resizedBase64,
+            fileName: file.name
+        });
+
+        showLoading(false);
+
+        if (result && result.success) {
+            showToast('画像を設定しました');
+            // 画像を再読み込み
+            await loadTopImage();
+        } else {
+            showToast('画像のアップロードに失敗しました');
+        }
+
+    } catch (error) {
+        showLoading(false);
+        logError('Image upload error:', error);
+        showToast('画像の処理に失敗しました');
+    }
+
+    // inputをリセット（同じファイルを再選択できるように）
+    event.target.value = '';
+}
+
+/**
+ * トップ画像を削除
+ */
+async function deleteTopImage() {
+    if (!confirm('トップ画像を削除しますか？')) return;
+
+    showLoading(true);
+    const result = await apiRequest('deleteTopImage');
+    showLoading(false);
+
+    if (result && result.success) {
+        showToast('画像を削除しました');
+        await loadTopImage();
+    } else {
+        showToast('削除に失敗しました');
+    }
+}
+
+/**
+ * ファイルをBase64に変換
+ */
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * 画像をリサイズ
+ * iPhoneの写真は大きいので、アップロード前にリサイズ
+ */
+function resizeImage(base64, maxWidth) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            // リサイズ不要な場合はそのまま返す
+            if (img.width <= maxWidth) {
+                resolve(base64);
+                return;
+            }
+
+            // キャンバスでリサイズ
+            const canvas = document.createElement('canvas');
+            const ratio = maxWidth / img.width;
+            canvas.width = maxWidth;
+            canvas.height = img.height * ratio;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // JPEG形式で出力（品質80%）
+            const resized = canvas.toDataURL('image/jpeg', 0.8);
+            log('Image resized:', img.width, 'x', img.height, '->', canvas.width, 'x', canvas.height);
+            resolve(resized);
+        };
+        img.src = base64;
+    });
 }
