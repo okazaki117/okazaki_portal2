@@ -139,13 +139,12 @@ function escapeHtml(text) {
 /* ============================================
    API通信（修正版）
 
-   重要: GASへのリクエストはGETを使用
-   - POSTだとCORSプリフライトが発生しGASで失敗する
-   - データはURLパラメータ（data=JSON）として送信
+   ・通常のリクエスト: GET + URLパラメータ
+   ・画像アップロード: POST + FormData（URLパラメータ制限を回避）
 ============================================ */
 
 /**
- * APIリクエスト（GET方式）
+ * APIリクエスト
  * @param {string} action - アクション名
  * @param {object} data - 送信データ（オプション）
  * @returns {Promise<object|null>}
@@ -158,59 +157,22 @@ async function apiRequest(action, data = null) {
         return null;
     }
 
-    log('API Request:', action, data);
+    log('API Request:', action, data ? '(data present)' : '(no data)');
 
     try {
-        // URLを構築
-        const url = new URL(CONFIG.API_URL);
-        url.searchParams.set('action', action);
-
-        // データがある場合はJSONとしてパラメータに追加
-        if (data) {
-            url.searchParams.set('data', JSON.stringify(data));
+        // 画像アップロードはPOSTで送信（URLパラメータ制限を回避）
+        if (action === 'uploadTopImage' && data?.base64) {
+            return await apiRequestPost(action, data);
         }
 
-        log('Fetching:', url.toString());
-
-        // GETリクエストを送信
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            // GASは自動でCORSヘッダーを付与するので mode: 'cors' でOK
-        });
-
-        log('Response status:', response.status);
-
-        // レスポンスをテキストとして取得（デバッグ用）
-        const responseText = await response.text();
-        log('Response text:', responseText.substring(0, 500));
-
-        // JSONとしてパース
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (parseError) {
-            logError('JSON parse error:', parseError);
-            logError('Response was:', responseText);
-            showToast('APIレスポンスの解析に失敗しました');
-            return null;
-        }
-
-        // 成功チェック
-        if (!result.success) {
-            logError('API error:', result.error);
-            showToast('エラー: ' + (result.error || '不明なエラー'));
-            return null;
-        }
-
-        log('API Success:', action);
-        return result;
+        // 通常のリクエストはGETで送信
+        return await apiRequestGet(action, data);
 
     } catch (error) {
-        logError('Fetch error:', error);
+        logError('API error:', error);
         logError('Error name:', error.name);
         logError('Error message:', error.message);
 
-        // より詳細なエラーメッセージ
         if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
             showToast('通信エラー: APIに接続できません');
         } else {
@@ -218,6 +180,80 @@ async function apiRequest(action, data = null) {
         }
         return null;
     }
+}
+
+/**
+ * GETリクエスト（通常のAPI呼び出し用）
+ */
+async function apiRequestGet(action, data = null) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.set('action', action);
+
+    if (data) {
+        url.searchParams.set('data', JSON.stringify(data));
+    }
+
+    log('GET:', url.toString().substring(0, 200) + '...');
+
+    const response = await fetch(url.toString(), { method: 'GET' });
+    return await handleApiResponse(response, action);
+}
+
+/**
+ * POSTリクエスト（画像アップロード用）
+ *
+ * GASへの大きなデータ送信にはPOST + text/plainを使用。
+ * application/jsonだとCORSプリフライトが発生するため、
+ * text/plainで送信し、GAS側でJSONパースする。
+ */
+async function apiRequestPost(action, data) {
+    const url = new URL(CONFIG.API_URL);
+    url.searchParams.set('action', action);
+
+    log('POST:', url.toString());
+    log('POST data size:', Math.round(JSON.stringify(data).length / 1024), 'KB');
+
+    const response = await fetch(url.toString(), {
+        method: 'POST',
+        // text/plain を使用することで CORS プリフライトを回避
+        headers: {
+            'Content-Type': 'text/plain;charset=UTF-8'
+        },
+        body: JSON.stringify(data)
+    });
+
+    return await handleApiResponse(response, action);
+}
+
+/**
+ * APIレスポンスを処理
+ */
+async function handleApiResponse(response, action) {
+    log('Response status:', response.status);
+
+    const responseText = await response.text();
+    log('Response text:', responseText.substring(0, 300));
+
+    // JSONとしてパース
+    let result;
+    try {
+        result = JSON.parse(responseText);
+    } catch (parseError) {
+        logError('JSON parse error:', parseError);
+        logError('Response was:', responseText.substring(0, 500));
+        showToast('APIレスポンスの解析に失敗しました');
+        return null;
+    }
+
+    // 成功チェック
+    if (!result.success) {
+        logError('API error:', result.error);
+        showToast('エラー: ' + (result.error || '不明なエラー'));
+        return null;
+    }
+
+    log('API Success:', action);
+    return result;
 }
 
 /* ============================================

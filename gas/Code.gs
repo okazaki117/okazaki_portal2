@@ -93,25 +93,39 @@ function handleRequest(e) {
   try {
     const action = e.parameter.action || '';
 
+    // リクエスト情報をログ（デバッグ用）
+    Logger.log('=== Request ===');
+    Logger.log('Action: ' + action);
+    Logger.log('Method: ' + (e.postData ? 'POST' : 'GET'));
+
     // データはクエリパラメータから取得（GETでもPOSTでも対応）
     let data = {};
 
-    // パラメータからデータを取得
+    // パラメータからデータを取得（GETリクエスト用）
     if (e.parameter.data) {
       try {
         data = JSON.parse(e.parameter.data);
+        Logger.log('Data from parameter: ' + e.parameter.data.substring(0, 100) + '...');
       } catch (parseError) {
+        Logger.log('Parameter parse error: ' + parseError);
         return createResponse({ success: false, error: 'Invalid JSON in data parameter' });
       }
     }
 
-    // POSTの場合はpostDataからも試みる
+    // POSTの場合はpostDataから取得（画像アップロード用）
     if (e.postData && e.postData.contents) {
       try {
+        Logger.log('POST data size: ' + e.postData.contents.length + ' bytes');
+        Logger.log('POST data type: ' + e.postData.type);
         const postBody = JSON.parse(e.postData.contents);
         data = { ...data, ...postBody };
+        Logger.log('POST data parsed successfully');
       } catch (parseError) {
-        // postDataのパースに失敗してもパラメータがあればOK
+        Logger.log('POST parse error: ' + parseError);
+        // 画像アップロードの場合はエラーを返す
+        if (action === 'uploadTopImage') {
+          return createResponse({ success: false, error: 'Failed to parse POST data: ' + parseError });
+        }
       }
     }
 
