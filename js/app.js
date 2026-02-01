@@ -993,49 +993,56 @@ async function loadTopImage() {
 
 /**
  * 画像選択時の処理
+ *
+ * iPhone写真（HEIC/JPEG、数MB〜数十MB）を自動でリサイズし、
+ * 1MB以下に圧縮してからアップロードする。
+ * ユーザーはサイズや形式を意識する必要がない。
  */
 async function handleTopImageSelect(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // ファイルサイズチェック（5MB制限）
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-        showToast('画像サイズは5MB以下にしてください');
-        return;
-    }
-
-    // 画像タイプチェック
+    // 画像タイプチェック（HEIC は Safari が自動で JPEG に変換）
     if (!file.type.startsWith('image/')) {
         showToast('画像ファイルを選択してください');
         return;
     }
 
-    log('Selected image:', file.name, file.type, file.size);
+    log('Selected image:', file.name, file.type, formatBytes(file.size));
 
     showLoading(true);
 
     try {
         // ファイルをBase64に変換
-        const base64 = await fileToBase64(file);
+        const originalBase64 = await fileToBase64(file);
 
-        // iPhone写真の場合、サイズが大きいのでリサイズ
-        const resizedBase64 = await resizeImage(base64, 1200);
+        // 圧縮処理（1MB以下を目標）
+        const compressedBase64 = await compressImageForUpload(originalBase64, {
+            maxWidth: 1280,
+            maxHeight: 1280,
+            targetSizeKB: 900,  // 目標: 900KB以下
+            minQuality: 0.5     // 最低品質
+        });
+
+        // 最終サイズをログ
+        const finalSizeKB = Math.round(compressedBase64.length * 0.75 / 1024);
+        log('Compressed size:', finalSizeKB, 'KB');
 
         // GASにアップロード
         const result = await apiRequest('uploadTopImage', {
-            base64: resizedBase64,
-            fileName: file.name
+            base64: compressedBase64,
+            fileName: file.name.replace(/\.[^.]+$/, '.jpg')  // 拡張子を.jpgに
         });
 
         showLoading(false);
 
         if (result && result.success) {
             showToast('画像を設定しました');
-            // 画像を再読み込み
             await loadTopImage();
         } else {
-            showToast('画像のアップロードに失敗しました');
+            const errorMsg = result?.error || 'アップロードに失敗しました';
+            logError('Upload failed:', errorMsg);
+            showToast('アップロードに失敗しました');
         }
 
     } catch (error) {
@@ -1079,33 +1086,104 @@ function fileToBase64(file) {
 }
 
 /**
- * 画像をリサイズ
- * iPhoneの写真は大きいので、アップロード前にリサイズ
+ * 画像を圧縮してアップロード用に最適化
+ *
+ * @param {string} base64 - 元画像のBase64
+ * @param {object} options - 圧縮オプション
+ * @returns {Promise<string>} 圧縮後のBase64
+ *
+ * iPhone Safari 特有の注意点：
+ * - HEIC形式はブラウザが自動でJPEG変換
+ * - Canvasのメモリ制限があるため、先にリサイズしてからCanvas処理
+ * - iOS 13以降はEXIF orientationを自動補正
  */
-function resizeImage(base64, maxWidth) {
-    return new Promise((resolve) => {
+async function compressImageForUpload(base64, options = {}) {
+    const {
+        maxWidth = 1280,
+        maxHeight = 1280,
+        targetSizeKB = 900,
+        minQuality = 0.5
+    } = options;
+
+    return new Promise((resolve, reject) => {
         const img = new Image();
+
         img.onload = () => {
-            // リサイズ不要な場合はそのまま返す
-            if (img.width <= maxWidth) {
-                resolve(base64);
-                return;
+            try {
+                // 1. リサイズ比率を計算
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width = Math.round(width * ratio);
+                    height = Math.round(height * ratio);
+                }
+
+                log('Resize:', img.width, 'x', img.height, '->', width, 'x', height);
+
+                // 2. Canvasに描画
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                // 背景を白に（透過PNGの場合の対策）
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // 3. 品質を調整しながら圧縮
+                let quality = 0.8;
+                let result = canvas.toDataURL('image/jpeg', quality);
+                let sizeKB = estimateBase64SizeKB(result);
+
+                log('Initial compression: quality=', quality, 'size=', sizeKB, 'KB');
+
+                // 目標サイズを超えている場合、品質を下げて再圧縮
+                while (sizeKB > targetSizeKB && quality > minQuality) {
+                    quality -= 0.1;
+                    result = canvas.toDataURL('image/jpeg', quality);
+                    sizeKB = estimateBase64SizeKB(result);
+                    log('Re-compress: quality=', quality.toFixed(1), 'size=', sizeKB, 'KB');
+                }
+
+                // 最終的なサイズが大きすぎる場合は警告（ただし続行）
+                if (sizeKB > 1500) {
+                    log('Warning: Final size is', sizeKB, 'KB, may fail to upload');
+                }
+
+                resolve(result);
+
+            } catch (error) {
+                reject(error);
             }
-
-            // キャンバスでリサイズ
-            const canvas = document.createElement('canvas');
-            const ratio = maxWidth / img.width;
-            canvas.width = maxWidth;
-            canvas.height = img.height * ratio;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            // JPEG形式で出力（品質80%）
-            const resized = canvas.toDataURL('image/jpeg', 0.8);
-            log('Image resized:', img.width, 'x', img.height, '->', canvas.width, 'x', canvas.height);
-            resolve(resized);
         };
+
+        img.onerror = () => {
+            reject(new Error('Failed to load image'));
+        };
+
         img.src = base64;
     });
+}
+
+/**
+ * Base64文字列のおおよそのサイズ（KB）を計算
+ * Base64は約33%のオーバーヘッドがあるため、実際のバイト数は文字数×0.75
+ */
+function estimateBase64SizeKB(base64) {
+    // "data:image/jpeg;base64," のプレフィックスを除く
+    const dataIndex = base64.indexOf(',');
+    const data = dataIndex >= 0 ? base64.substring(dataIndex + 1) : base64;
+    return Math.round(data.length * 0.75 / 1024);
+}
+
+/**
+ * バイト数を読みやすい形式にフォーマット
+ */
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }

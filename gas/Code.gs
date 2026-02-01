@@ -528,6 +528,9 @@ function addTestData() {
  * トップ画像をアップロード
  * @param {object} data - { base64: 'data:image/...', fileName: 'image.jpg' }
  * @returns {object} { success: true, fileId: '...' }
+ *
+ * フロントエンドで1MB以下に圧縮済みの画像を受け取る想定。
+ * Base64のオーバーヘッド（約33%）を考慮し、URLパラメータ制限内に収まる。
  */
 function uploadTopImage(data) {
   if (!data || !data.base64) {
@@ -535,6 +538,10 @@ function uploadTopImage(data) {
   }
 
   try {
+    // 受信データサイズをログ（デバッグ用）
+    const receivedSizeKB = Math.round(data.base64.length / 1024);
+    Logger.log('Received image data: ' + receivedSizeKB + ' KB');
+
     // Base64データをデコード
     // フォーマット: "data:image/jpeg;base64,/9j/4AAQ..."
     const matches = data.base64.match(/^data:([^;]+);base64,(.+)$/);
@@ -544,8 +551,14 @@ function uploadTopImage(data) {
 
     const mimeType = matches[1];
     const base64Data = matches[2];
+
+    // デコード後のサイズをログ
+    const decodedBytes = Utilities.base64Decode(base64Data);
+    const fileSizeKB = Math.round(decodedBytes.length / 1024);
+    Logger.log('Decoded image size: ' + fileSizeKB + ' KB, type: ' + mimeType);
+
     const blob = Utilities.newBlob(
-      Utilities.base64Decode(base64Data),
+      decodedBytes,
       mimeType,
       data.fileName || 'top_image.jpg'
     );

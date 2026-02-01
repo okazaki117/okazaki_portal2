@@ -50,7 +50,7 @@
 4. **デプロイ** をクリック
 5. **ウェブアプリのURL** をコピー（`https://script.google.com/.../exec` の形式）
 
-https://script.google.com/macros/s/AKfycbxh0VrNM9yD2xJI046IfA0wtbFCJD4r2nP6H7adwZkiPcWVdCK3CgNvah_JXrZFP_6W/exec
+https://script.google.com/macros/s/AKfycbyEiZNXij41KmhmhaSYS1BpD1GSegw3qmYZxYdB1aUUUM728s4BkkzZGTuVsNuR0C5R/exec
 
 ### 5. Webアプリのホスティング
 
