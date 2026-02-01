@@ -1,12 +1,13 @@
 /**
  * ============================================
- * 家族ポータル - メインアプリケーション（修正版）
+ * 家族ポータル - メインアプリケーション v2.1
  *
  * 修正点：
  * - ローカルストレージのフォールバックを削除
  * - GETリクエストでCORS問題を回避
  * - 全端末でスプレッドシートのみを参照
  * - 詳細なエラーログ出力
+ * - 画像アップロードはPOSTを使用（v2.1）
  * ============================================
  */
 
@@ -162,10 +163,12 @@ async function apiRequest(action, data = null) {
     try {
         // 画像アップロードはPOSTで送信（URLパラメータ制限を回避）
         if (action === 'uploadTopImage' && data?.base64) {
+            log('★ Using POST for image upload (base64 length:', data.base64.length, ')');
             return await apiRequestPost(action, data);
         }
 
         // 通常のリクエストはGETで送信
+        log('Using GET for action:', action);
         return await apiRequestGet(action, data);
 
     } catch (error) {
@@ -210,8 +213,10 @@ async function apiRequestPost(action, data) {
     const url = new URL(CONFIG.API_URL);
     url.searchParams.set('action', action);
 
-    log('POST:', url.toString());
+    log('★★★ POST REQUEST ★★★');
+    log('POST URL:', url.toString());
     log('POST data size:', Math.round(JSON.stringify(data).length / 1024), 'KB');
+    log('POST method: POST (not GET)');
 
     const response = await fetch(url.toString(), {
         method: 'POST',
@@ -222,6 +227,7 @@ async function apiRequestPost(action, data) {
         body: JSON.stringify(data)
     });
 
+    log('POST response received, status:', response.status);
     return await handleApiResponse(response, action);
 }
 
