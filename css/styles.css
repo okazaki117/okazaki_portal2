@@ -226,6 +226,15 @@ body {
     gap: 16px;
 }
 
+/* バージョン表記（ポータル下部） */
+.version-footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 24px;
+    opacity: 0.6;
+}
+
 .app-card {
     background: var(--card-bg);
     border: none;
