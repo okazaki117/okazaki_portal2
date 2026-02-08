@@ -1,13 +1,18 @@
 /**
  * ============================================
- * 家族ポータル - メインアプリケーション v2.1
+ * 家族ポータル - メインアプリケーション v2.2
  *
- * 修正点：
+ * v2.2 修正点：
+ * - ローカルキャッシュ導入（体感速度改善）
+ * - 楽観的UI更新（操作の即時反映）
+ * - バックグラウンドでのデータ同期
+ *
+ * v2.1 修正点：
  * - ローカルストレージのフォールバックを削除
  * - GETリクエストでCORS問題を回避
  * - 全端末でスプレッドシートのみを参照
  * - 詳細なエラーログ出力
- * - 画像アップロードはPOSTを使用（v2.1）
+ * - 画像アップロードはPOSTを使用
  * ============================================
  */
 
@@ -16,11 +21,14 @@
 ============================================ */
 const CONFIG = {
     // API URL は設定画面またはlocalStorageから読み込み
-    // ★ ここに直接URLを書くこともできる
     API_URL: '',
 
-    // localStorageキー（API URLの保存のみに使用）
+    // localStorageキー
     STORAGE_KEY_API_URL: 'portal_api_url',
+    CACHE_KEY_MEMOS: 'portal_cache_memos',
+    CACHE_KEY_WISHES: 'portal_cache_wishes',
+    CACHE_KEY_SHOPPING: 'portal_cache_shopping',
+    CACHE_KEY_TOP_IMAGE: 'portal_cache_top_image',
 
     // デバッグモード
     DEBUG: true
@@ -135,6 +143,63 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/* ============================================
+   キャッシュ管理
+
+   ・前回取得したデータをlocalStorageに保存
+   ・画面表示時はキャッシュを即座に表示
+   ・バックグラウンドでAPIから最新を取得
+   ・差分があればUIを更新
+============================================ */
+
+/**
+ * キャッシュを保存
+ * @param {string} key - キャッシュキー
+ * @param {any} data - 保存するデータ
+ */
+function saveCache(key, data) {
+    try {
+        const cacheData = {
+            data: data,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(key, JSON.stringify(cacheData));
+        log('Cache saved:', key);
+    } catch (e) {
+        logError('Cache save failed:', e);
+    }
+}
+
+/**
+ * キャッシュを読み込み
+ * @param {string} key - キャッシュキー
+ * @returns {any|null} キャッシュデータ（なければnull）
+ */
+function loadCache(key) {
+    try {
+        const cached = localStorage.getItem(key);
+        if (!cached) return null;
+
+        const cacheData = JSON.parse(cached);
+        log('Cache loaded:', key, 'age:', Math.round((Date.now() - cacheData.timestamp) / 1000), 'sec');
+        return cacheData.data;
+    } catch (e) {
+        logError('Cache load failed:', e);
+        return null;
+    }
+}
+
+/**
+ * キャッシュをクリア
+ */
+function clearCache() {
+    localStorage.removeItem(CONFIG.CACHE_KEY_MEMOS);
+    localStorage.removeItem(CONFIG.CACHE_KEY_WISHES);
+    localStorage.removeItem(CONFIG.CACHE_KEY_SHOPPING);
+    localStorage.removeItem(CONFIG.CACHE_KEY_TOP_IMAGE);
+    log('Cache cleared');
 }
 
 /* ============================================
@@ -339,12 +404,22 @@ async function loadPinnedMemos() {
         return;
     }
 
+    // 1. キャッシュがあれば即座に表示
+    const cached = loadCache(CONFIG.CACHE_KEY_MEMOS);
+    if (cached) {
+        state.memos = cached;
+        const pinned = state.memos.filter(m => m.pinned && !m.deleted);
+        renderPinnedMemos(pinned);
+    }
+
+    // 2. バックグラウンドでAPIから取得
     const result = await apiRequest('getMemos');
     if (result && result.data) {
         state.memos = result.data;
+        saveCache(CONFIG.CACHE_KEY_MEMOS, result.data);
         const pinned = state.memos.filter(m => m.pinned && !m.deleted);
         renderPinnedMemos(pinned);
-    } else {
+    } else if (!cached) {
         renderPinnedMemos([]);
     }
 }
@@ -378,12 +453,22 @@ async function loadMemos() {
         return;
     }
 
-    showLoading(true);
+    // 1. キャッシュがあれば即座に表示（ローディングなし）
+    const cached = loadCache(CONFIG.CACHE_KEY_MEMOS);
+    if (cached) {
+        state.memos = cached;
+        renderMemos();
+    } else {
+        showLoading(true);
+    }
+
+    // 2. APIから最新を取得
     const result = await apiRequest('getMemos');
     showLoading(false);
 
     if (result && result.data) {
         state.memos = result.data;
+        saveCache(CONFIG.CACHE_KEY_MEMOS, result.data);
         renderMemos();
     }
 }
@@ -440,20 +525,26 @@ async function addMemo() {
         updatedAt: new Date().toISOString()
     };
 
-    showLoading(true);
+    // 楽観的UI更新：即座にUIに反映
+    state.memos.unshift(newMemo);
+    renderMemos();
+    saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
+
+    // 入力欄をクリア
+    if (input) input.value = '';
+    if (pinCheck) pinCheck.checked = false;
+
+    // バックグラウンドでAPIに保存
     const result = await apiRequest('addMemo', newMemo);
-    showLoading(false);
 
     if (result) {
-        // 成功したらリストに追加して再描画
-        state.memos.unshift(newMemo);
-        renderMemos();
-
-        // 入力欄をクリア
-        if (input) input.value = '';
-        if (pinCheck) pinCheck.checked = false;
-
         showToast('メモを追加しました');
+    } else {
+        // 失敗したらロールバック
+        state.memos = state.memos.filter(m => m.id !== newMemo.id);
+        renderMemos();
+        saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
+        showToast('追加に失敗しました');
     }
 }
 
@@ -461,19 +552,24 @@ async function toggleMemoPin(id) {
     const memo = state.memos.find(m => m.id === id);
     if (!memo) return;
 
+    const wasPinned = memo.pinned;
     memo.pinned = !memo.pinned;
     memo.updatedAt = new Date().toISOString();
 
-    showLoading(true);
+    // 楽観的UI更新
+    renderMemos();
+    saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
+
+    // バックグラウンドでAPI更新
     const result = await apiRequest('updateMemo', memo);
-    showLoading(false);
 
     if (result) {
-        renderMemos();
         showToast(memo.pinned ? 'ピン留めしました' : 'ピン留めを解除しました');
     } else {
-        // 失敗したら元に戻す
-        memo.pinned = !memo.pinned;
+        // 失敗したらロールバック
+        memo.pinned = wasPinned;
+        renderMemos();
+        saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
     }
 }
 
@@ -486,15 +582,20 @@ async function deleteMemo(id) {
     memo.deleted = true;
     memo.updatedAt = new Date().toISOString();
 
-    showLoading(true);
-    const result = await apiRequest('updateMemo', memo);
-    showLoading(false);
+    // 楽観的UI更新
+    renderMemos();
+    saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
+    showToast('削除しました');
 
-    if (result) {
-        renderMemos();
-        showToast('削除しました');
-    } else {
+    // バックグラウンドでAPI更新
+    const result = await apiRequest('updateMemo', memo);
+
+    if (!result) {
+        // 失敗したらロールバック
         memo.deleted = false;
+        renderMemos();
+        saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
+        showToast('削除に失敗しました');
     }
 }
 
@@ -513,12 +614,22 @@ async function loadWishes() {
         return;
     }
 
-    showLoading(true);
+    // 1. キャッシュがあれば即座に表示
+    const cached = loadCache(CONFIG.CACHE_KEY_WISHES);
+    if (cached) {
+        state.wishes = cached;
+        renderWishes();
+    } else {
+        showLoading(true);
+    }
+
+    // 2. APIから最新を取得
     const result = await apiRequest('getWishes');
     showLoading(false);
 
     if (result && result.data) {
         state.wishes = result.data;
+        saveCache(CONFIG.CACHE_KEY_WISHES, result.data);
         renderWishes();
     }
 }
@@ -590,15 +701,23 @@ async function addWish() {
         updatedAt: new Date().toISOString()
     };
 
-    showLoading(true);
+    // 楽観的UI更新
+    state.wishes.unshift(newWish);
+    renderWishes();
+    saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
+    if (input) input.value = '';
+
+    // バックグラウンドでAPI保存
     const result = await apiRequest('addWish', newWish);
-    showLoading(false);
 
     if (result) {
-        state.wishes.unshift(newWish);
-        renderWishes();
-        if (input) input.value = '';
         showToast('追加しました');
+    } else {
+        // 失敗したらロールバック
+        state.wishes = state.wishes.filter(w => w.id !== newWish.id);
+        renderWishes();
+        saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
+        showToast('追加に失敗しました');
     }
 }
 
@@ -610,11 +729,18 @@ async function updateWishStatus(id, status) {
     wish.status = status;
     wish.updatedAt = new Date().toISOString();
 
+    // 楽観的UI更新
+    renderWishes();
+    saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
+
+    // バックグラウンドでAPI更新
     const result = await apiRequest('updateWish', wish);
-    if (result) {
-        renderWishes();
-    } else {
+
+    if (!result) {
+        // 失敗したらロールバック
         wish.status = oldStatus;
+        renderWishes();
+        saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
     }
 }
 
@@ -625,15 +751,22 @@ async function editWishComment(id) {
     const comment = prompt('コメントを入力:', wish.comment || '');
     if (comment === null) return;
 
+    const oldComment = wish.comment;
     wish.comment = comment;
     wish.updatedAt = new Date().toISOString();
 
-    showLoading(true);
-    const result = await apiRequest('updateWish', wish);
-    showLoading(false);
+    // 楽観的UI更新
+    renderWishes();
+    saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
 
-    if (result) {
+    // バックグラウンドでAPI更新
+    const result = await apiRequest('updateWish', wish);
+
+    if (!result) {
+        // 失敗したらロールバック
+        wish.comment = oldComment;
         renderWishes();
+        saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
     }
 }
 
@@ -646,15 +779,20 @@ async function deleteWish(id) {
     wish.deleted = true;
     wish.updatedAt = new Date().toISOString();
 
-    showLoading(true);
-    const result = await apiRequest('updateWish', wish);
-    showLoading(false);
+    // 楽観的UI更新
+    renderWishes();
+    saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
+    showToast('削除しました');
 
-    if (result) {
-        renderWishes();
-        showToast('削除しました');
-    } else {
+    // バックグラウンドでAPI更新
+    const result = await apiRequest('updateWish', wish);
+
+    if (!result) {
+        // 失敗したらロールバック
         wish.deleted = false;
+        renderWishes();
+        saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
+        showToast('削除に失敗しました');
     }
 }
 
@@ -668,12 +806,22 @@ async function loadShopping() {
         return;
     }
 
-    showLoading(true);
+    // 1. キャッシュがあれば即座に表示
+    const cached = loadCache(CONFIG.CACHE_KEY_SHOPPING);
+    if (cached) {
+        state.shopping = cached;
+        renderShopping();
+    } else {
+        showLoading(true);
+    }
+
+    // 2. APIから最新を取得
     const result = await apiRequest('getShopping');
     showLoading(false);
 
     if (result && result.data) {
         state.shopping = result.data;
+        saveCache(CONFIG.CACHE_KEY_SHOPPING, result.data);
         renderShopping();
     }
 }
@@ -728,15 +876,23 @@ async function addShoppingItem() {
         updatedAt: new Date().toISOString()
     };
 
-    showLoading(true);
+    // 楽観的UI更新
+    state.shopping.unshift(newItem);
+    renderShopping();
+    saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+    if (input) input.value = '';
+
+    // バックグラウンドでAPI保存
     const result = await apiRequest('addShopping', newItem);
-    showLoading(false);
 
     if (result) {
-        state.shopping.unshift(newItem);
-        renderShopping();
-        if (input) input.value = '';
         showToast('追加しました');
+    } else {
+        // 失敗したらロールバック
+        state.shopping = state.shopping.filter(i => i.id !== newItem.id);
+        renderShopping();
+        saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+        showToast('追加に失敗しました');
     }
 }
 
@@ -744,14 +900,22 @@ async function toggleShoppingItem(id) {
     const item = state.shopping.find(i => i.id === id);
     if (!item) return;
 
+    const wasCompleted = item.completed;
     item.completed = !item.completed;
     item.updatedAt = new Date().toISOString();
 
+    // 楽観的UI更新
+    renderShopping();
+    saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+
+    // バックグラウンドでAPI更新
     const result = await apiRequest('updateShopping', item);
-    if (result) {
+
+    if (!result) {
+        // 失敗したらロールバック
+        item.completed = wasCompleted;
         renderShopping();
-    } else {
-        item.completed = !item.completed;
+        saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
     }
 }
 
@@ -762,12 +926,20 @@ async function deleteShoppingItem(id) {
     item.deleted = true;
     item.updatedAt = new Date().toISOString();
 
+    // 楽観的UI更新
+    renderShopping();
+    saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+    showToast('削除しました');
+
+    // バックグラウンドでAPI更新
     const result = await apiRequest('updateShopping', item);
-    if (result) {
-        renderShopping();
-        showToast('削除しました');
-    } else {
+
+    if (!result) {
+        // 失敗したらロールバック
         item.deleted = false;
+        renderShopping();
+        saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+        showToast('削除に失敗しました');
     }
 }
 
@@ -809,9 +981,10 @@ async function testConnection() {
 }
 
 function clearAllData() {
-    if (!confirm('ローカルの設定をクリアしますか？（スプレッドシートのデータは消えません）')) return;
+    if (!confirm('ローカルの設定とキャッシュをクリアしますか？（スプレッドシートのデータは消えません）')) return;
 
     localStorage.removeItem(CONFIG.STORAGE_KEY_API_URL);
+    clearCache();
     CONFIG.API_URL = '';
     state.memos = [];
     state.wishes = [];
@@ -1006,9 +1179,20 @@ async function loadTopImage() {
         return;
     }
 
-    // ローディング表示
-    container.classList.add('loading');
+    // 1. キャッシュがあれば即座に表示
+    const cached = loadCache(CONFIG.CACHE_KEY_TOP_IMAGE);
+    if (cached && cached.hasImage && cached.base64) {
+        imageEl.src = cached.base64;
+        imageEl.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+        if (actions) actions.classList.remove('hidden');
+        log('Top image loaded from cache');
+    } else {
+        // キャッシュなし：ローディング表示
+        container.classList.add('loading');
+    }
 
+    // 2. バックグラウンドでAPIから取得
     try {
         const result = await apiRequest('getTopImage');
 
@@ -1020,12 +1204,14 @@ async function loadTopImage() {
             imageEl.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
             if (actions) actions.classList.remove('hidden');
-            log('Top image loaded');
+            saveCache(CONFIG.CACHE_KEY_TOP_IMAGE, { hasImage: true, base64: result.base64 });
+            log('Top image loaded from API');
         } else {
             // 画像なし
             imageEl.classList.add('hidden');
             if (placeholder) placeholder.classList.remove('hidden');
             if (actions) actions.classList.add('hidden');
+            saveCache(CONFIG.CACHE_KEY_TOP_IMAGE, { hasImage: false });
         }
     } catch (error) {
         container.classList.remove('loading');
