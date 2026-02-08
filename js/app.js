@@ -980,8 +980,27 @@ async function testConnection() {
     }
 }
 
-function clearAllData() {
-    if (!confirm('ローカルの設定とキャッシュをクリアしますか？（スプレッドシートのデータは消えません）')) return;
+/**
+ * キャッシュのみクリア（API URLは保持）
+ */
+function clearDataCache() {
+    clearCache();
+    state.memos = [];
+    state.wishes = [];
+    state.shopping = [];
+    showToast('キャッシュをクリアしました。画面を更新します...');
+
+    // 少し待ってからポータルに戻ってデータを再取得
+    setTimeout(() => {
+        navigateTo('portal');
+    }, 500);
+}
+
+/**
+ * すべての設定をクリア（API URL含む）
+ */
+function clearAllSettings() {
+    if (!confirm('API URLを含むすべての設定をクリアしますか？\n（スプレッドシートのデータは消えません）')) return;
 
     localStorage.removeItem(CONFIG.STORAGE_KEY_API_URL);
     clearCache();
@@ -991,7 +1010,7 @@ function clearAllData() {
     state.shopping = [];
 
     loadSettings();
-    showToast('設定をクリアしました');
+    showToast('すべての設定をクリアしました');
 }
 
 /* ============================================
@@ -1111,10 +1130,16 @@ function setupEventListeners() {
         testConnectionBtn.addEventListener('click', testConnection);
     }
 
-    // 設定：クリア
-    const clearCacheBtn = document.getElementById('clear-cache');
-    if (clearCacheBtn) {
-        clearCacheBtn.addEventListener('click', clearAllData);
+    // 設定：キャッシュのみクリア
+    const clearDataCacheBtn = document.getElementById('clear-data-cache');
+    if (clearDataCacheBtn) {
+        clearDataCacheBtn.addEventListener('click', clearDataCache);
+    }
+
+    // 設定：すべてクリア
+    const clearAllSettingsBtn = document.getElementById('clear-all-settings');
+    if (clearAllSettingsBtn) {
+        clearAllSettingsBtn.addEventListener('click', clearAllSettings);
     }
 
     // トップ画像：コンテナクリックで画像選択

@@ -666,9 +666,25 @@ body {
     margin-top: 12px;
 }
 
+.button-group.vertical {
+    flex-direction: column;
+    gap: 8px;
+}
+
 .button-group .primary-btn,
 .button-group .secondary-btn {
     flex: 1;
+}
+
+/* 危険なアクション用のアウトラインボタン */
+.secondary-btn.danger-outline {
+    color: #dc3545;
+    border-color: #dc3545;
+    background: transparent;
+}
+
+.secondary-btn.danger-outline:active {
+    background: rgba(220, 53, 69, 0.1);
 }
 
 /* セットアップ手順リスト */

@@ -226,11 +226,18 @@
 
                 <div class="settings-section">
                     <h2 class="section-title">データ管理</h2>
-                    <button id="clear-cache" class="secondary-btn">設定をクリア</button>
-                    <p class="setting-hint">
-                        ローカルの設定のみクリアします。<br>
-                        スプレッドシートのデータは削除されません。
-                    </p>
+                    <div class="button-group vertical">
+                        <button id="clear-data-cache" class="secondary-btn">キャッシュをクリア</button>
+                        <p class="setting-hint">
+                            表示用キャッシュのみクリアします。<br>
+                            最新データを強制的に再取得したい場合に使用。
+                        </p>
+                        <button id="clear-all-settings" class="secondary-btn danger-outline">すべての設定をクリア</button>
+                        <p class="setting-hint">
+                            API URLを含むすべての設定をクリアします。<br>
+                            スプレッドシートのデータは削除されません。
+                        </p>
+                    </div>
                 </div>
 
                 <div class="settings-section">
@@ -270,7 +277,7 @@
     </div>
 
     <!-- JavaScript（単一ファイルに統合）-->
-    <!-- v2.2: ローカルキャッシュ・楽観的UI更新を追加 -->
-    <script src="./js/app.js?v=2.2"></script>
+    <!-- v2.2.1: キャッシュクリアボタンを分離 -->
+    <script src="./js/app.js?v=2.2.1"></script>
 </body>
 </html>
