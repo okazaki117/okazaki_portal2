@@ -70,18 +70,7 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     min-height: 100vh;
-    /* iPhone セーフエリア対応 */
-    padding-top: var(--safe-top);
-    padding-bottom: var(--safe-bottom);
-    padding-left: var(--safe-left);
-    padding-right: var(--safe-right);
-}
-
-/* PWA表示時のスタンドアロンモード対応 */
-@media all and (display-mode: standalone) {
-    body {
-        /* スタンドアロン時の追加スタイル */
-    }
+    /* セーフエリアはヘッダーとコンテンツで個別に対応 */
 }
 
 /* ============================================
@@ -104,12 +93,17 @@ body {
     justify-content: space-between;
     background: var(--header-bg);
     color: var(--text-white);
-    padding: 12px 16px;
-    position: sticky;
+    /* position: fixed で画面上部に固定 */
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
-    /* iPhoneのnotch対応 */
+    /* セーフエリア対応（上・左・右） */
     padding-top: calc(12px + var(--safe-top));
+    padding-bottom: 12px;
+    padding-left: calc(16px + var(--safe-left));
+    padding-right: calc(16px + var(--safe-right));
 }
 
 #page-title {
@@ -145,7 +139,10 @@ body {
 ============================================ */
 #main-content {
     flex: 1;
-    padding: 16px;
+    /* ヘッダー分の余白を確保（fixed対応） */
+    padding-top: calc(60px + var(--safe-top));
+    padding-left: calc(16px + var(--safe-left));
+    padding-right: calc(16px + var(--safe-right));
     padding-bottom: calc(16px + var(--safe-bottom));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
