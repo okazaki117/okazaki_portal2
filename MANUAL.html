@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家族ポータル - 開発・運用マニュアル</title>
+<style>
+  :root {
+    --primary: #4A90A4;
+    --primary-dark: #3A7A94;
+    --bg: #FAFBFC;
+    --card-bg: #FFFFFF;
+    --text: #333;
+    --text-light: #666;
+    --border: #E0E0E0;
+    --accent-green: #66BB6A;
+    --accent-orange: #FF7043;
+    --accent-blue: #5C6BC0;
+    --code-bg: #F5F5F5;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  h1 {
+    font-size: 1.75rem;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 40px;
+  }
+  h2 {
+    font-size: 1.35rem;
+    color: var(--primary-dark);
+    margin-top: 48px;
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 4px solid var(--primary);
+  }
+  h3 {
+    font-size: 1.05rem;
+    color: var(--text);
+    margin-top: 28px;
+    margin-bottom: 10px;
+  }
+  p { margin-bottom: 12px; }
+  ul, ol { margin-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--primary);
+    margin-bottom: 10px;
+  }
+  .arch-diagram {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    line-height: 1.6;
+    white-space: pre;
+  }
+  .arch-diagram .label-user { color: #81D4FA; }
+  .arch-diagram .label-github { color: #A5D6A7; }
+  .arch-diagram .label-gas { color: #FFE082; }
+  .arch-diagram .label-data { color: #CE93D8; }
+  .arch-diagram .label-ai { color: #FF8A65; }
+  .arch-diagram .label-cache { color: #80DEEA; }
+  .arch-diagram .arrow { color: #78909C; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 12px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+  }
+  th {
+    background: var(--primary);
+    color: white;
+    font-weight: 500;
+  }
+  tr:nth-child(even) { background: #F8F9FA; }
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .tag-important { background: #FFEBEE; color: #C62828; }
+  .tag-safe { background: #E8F5E9; color: #2E7D32; }
+  .tag-info { background: #E3F2FD; color: #1565C0; }
+  .warning {
+    background: #FFF8E1;
+    border-left: 4px solid #FFA000;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    font-size: 0.9rem;
+  }
+  .toc {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 24px 0;
+  }
+  .toc-title { font-weight: 600; margin-bottom: 10px; color: var(--primary); }
+  .toc a { color: var(--primary); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin-bottom: 4px; font-size: 0.9rem; }
+  .flow-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .flow-num {
+    background: var(--primary);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .flow-content { flex: 1; }
+  .flow-content strong { display: block; margin-bottom: 2px; }
+  .last-updated {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.8rem;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<h1>家族ポータル 開発・運用マニュアル</h1>
+<p class="subtitle">
+  久しぶりに触る自分へ。数分で思い出すためのガイド。<br>
+  最終バージョン: v2.3.2 ／ 最終更新: 2026年2月9日
+</p>
+
+<!-- 目次 -->
+<div class="toc">
+  <div class="toc-title">目次</div>
+  <ol>
+    <li><a href="#overview">このアプリは何か</a></li>
+    <li><a href="#architecture">システム全体像</a></li>
+    <li><a href="#dev-flow">開発・更新の基本フロー</a></li>
+    <li><a href="#gas-policy">GAS更新の考え方</a></li>
+    <li><a href="#common-tasks">よくある作業パターン</a></li>
+    <li><a href="#troubleshooting">トラブル時の思考ガイド</a></li>
+  </ol>
+</div>
+
+<!-- ============================================ -->
+<h2 id="overview">1. このアプリは何か</h2>
+
+<div class="card">
+  <div class="card-title">ひとことで言うと</div>
+  <p><strong>夫婦2人だけで使う、シンプルな情報共有アプリ。</strong></p>
+  <p>
+    共有メモ、買い物リスト、やりたいことリスト、トップ画像の4機能だけ。<br>
+    iPhoneのホーム画面に追加して、ネイティブアプリのように使う。
+  </p>
+</div>
+
+<h3>設計思想</h3>
+<table>
+  <tr><th>原則</th><th>理由</th></tr>
+  <tr><td>シンプルであること</td><td>2人しか使わない。機能過多は邪魔になる</td></tr>
+  <tr><td>壊れにくいこと</td><td>低頻度更新。数ヶ月放置しても動き続ける必要がある</td></tr>
+  <tr><td>低運用コストであること</td><td>サーバー代ゼロ。Google無料枠内で完結</td></tr>
+  <tr><td>フレームワーク不使用</td><td>依存を増やさない。ビルド不要。素のHTML/CSS/JSだけ</td></tr>
+</table>
+
+<h3>機能一覧（v2.3.2 時点）</h3>
+<table>
+  <tr><th>機能</th><th>できること</th></tr>
+  <tr><td>トップ画像</td><td>ポータルに写真を1枚表示。タップで変更、削除は設定画面から</td></tr>
+  <tr><td>共有メモ</td><td>自由テキストのメモ。ピン留めするとポータルにも表示</td></tr>
+  <tr><td>やりたいことリスト</td><td>年ごとの目標管理。ステータス（未着手/進行中/完了）で分類</td></tr>
+  <tr><td>買い物リスト</td><td>「すぐ買う」「あとで買う」「購入済み」の3タブ。一括追加対応</td></tr>
+</table>
+
+<!-- ============================================ -->
+<h2 id="architecture">2. システム全体像</h2>
+
+<p>このアプリは「フロント」「API」「データ」「開発環境」の4層で動いている。</p>
+
+<div class="arch-diagram"><span class="label-user">[ iPhone Safari / PC ブラウザ ]</span>
+        <span class="arrow">│</span>
+        <span class="arrow">│</span>  HTMLを取得（初回のみ）
+        <span class="arrow">▼</span>
+<span class="label-github">[ GitHub Pages ]</span>  ── 静的ファイル置き場（データなし）
+  index.html / app.js / styles.css / manifest.json
+        <span class="arrow">│</span>
+        <span class="arrow">│</span>  APIリクエスト（GET / POST）
+        <span class="arrow">│</span>  ※ 通常は GET。画像だけ POST（CORS回避のため）
+        <span class="arrow">▼</span>
+<span class="label-gas">[ Google Apps Script ]</span>  ── API サーバー役（Code.gs）
+  doGet / doPost → スプレッドシートの読み書き
+  画像の保存・取得（Drive経由）
+        <span class="arrow">│</span>
+        <span class="arrow">▼</span>
+<span class="label-data">[ Google スプレッドシート ]</span>  ── データベース役
+  Memos / Wishes / Shopping / Settings の4シート
+        <span class="arrow">│</span>
+        <span class="arrow">▼</span>
+<span class="label-data">[ Google Drive ]</span>  ── 画像保管（限定公開。GAS経由でのみ取得）
+
+<span class="label-cache">[ localStorage ]</span>  ── 端末内キャッシュ（体感速度向上のため）
+  API URL / メモ / 買い物 / やりたいこと / トップ画像(Base64)
+
+───────────────────────────────────────────
+
+<span class="label-ai">[ 開発環境 ]</span>
+
+  WSL (Linux on Windows)
+    <span class="arrow">└─</span> Git / GitHub CLI
+    <span class="arrow">└─</span> Claude Code (CLI)  ── 設計・レビュー・軽微なUI修正
+    <span class="arrow">└─</span> Codex              ── 実装（人間が指示書を渡す）
+    <span class="arrow">└─</span> work/ai ブランチ   ── 作業用。main にマージして反映</div>
+
+<h3>データの流れ（例: 買い物アイテム追加）</h3>
+<div class="card">
+  <ol>
+    <li>ユーザーがアイテム名を入力して「追加」タップ</li>
+    <li><strong>楽観的UI更新</strong>: 即座に画面に表示 + localStorageに保存</li>
+    <li>バックグラウンドでGASにAPIリクエスト（GET）</li>
+    <li>GASがスプレッドシートに1行追加</li>
+    <li>成功 → トーストで「追加しました」。失敗 → UIをロールバック</li>
+  </ol>
+</div>
+
+<h3>セキュリティの仕組み</h3>
+<table>
+  <tr><th>リソース</th><th>公開範囲</th><th>メモ</th></tr>
+  <tr><td>GitHub Pages (HTML/JS/CSS)</td><td>誰でも見れる</td><td>データは一切含まない</td></tr>
+  <tr><td>GAS WebアプリURL</td><td>URLを知っている人のみ</td><td>推測困難なランダム文字列</td></tr>
+  <tr><td>スプレッドシート</td><td>非公開（オーナーのみ）</td><td>GAS経由でのみアクセス</td></tr>
+  <tr><td>Drive画像</td><td>非公開（限定公開）</td><td>GASがBase64で中継</td></tr>
+</table>
+<p>→ <strong>GAS URLが漏れない限り、第三者はデータにアクセスできない。</strong></p>
+
+<!-- ============================================ -->
+<h2 id="dev-flow">3. 開発・更新の基本フロー</h2>
+
+<h3>環境の前提</h3>
+<table>
+  <tr><th>ツール</th><th>用途</th></tr>
+  <tr><td>WSL (Ubuntu on Windows)</td><td>開発環境。ターミナル操作はここで行う</td></tr>
+  <tr><td>Git + GitHub CLI (<code>gh</code>)</td><td>バージョン管理、push、マージ</td></tr>
+  <tr><td>Claude Code</td><td>AI。設計・レビュー・軽微なCSS修正を担当</td></tr>
+  <tr><td>OpenAI Codex</td><td>AI。実装を担当。人間が指示書を渡す</td></tr>
+  <tr><td>GASエディタ（ブラウザ）</td><td>Code.gsの貼り替え・デプロイ</td></tr>
+  <tr><td>iPhone Safari</td><td>実機確認（最優先ターゲット）</td></tr>
+</table>
+
+<h3>Claude と Codex の役割分担</h3>
+<table>
+  <tr><th>担当</th><th>やること</th><th>やらないこと</th></tr>
+  <tr>
+    <td><strong>Claude</strong></td>
+    <td>調査・設計・レビュー・ドキュメント整備・軽微なCSS修正</td>
+    <td>大きなコード実装・GAS変更</td>
+  </tr>
+  <tr>
+    <td><strong>Codex</strong></td>
+    <td>仕様が明確な実装・修正（指示書ベース）</td>
+    <td>設計判断・独自の機能追加</td>
+  </tr>
+  <tr>
+    <td><strong>人間</strong></td>
+    <td>方針決定・承認・GASデプロイ・実機確認</td>
+    <td>-</td>
+  </tr>
+</table>
+
+<h3>標準的な改善フロー</h3>
+
+<div class="flow-step">
+  <div class="flow-num">1</div>
+  <div class="flow-content">
+    <strong>Claude に相談</strong>
+    調査・設計。影響範囲を整理し、方針を提案してもらう。
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">2</div>
+  <div class="flow-content">
+    <strong>人間が承認</strong>
+    方針を確認。OKなら Claude が Codex 向け指示書を <code>codex-tasks/</code> に作成。
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">3</div>
+  <div class="flow-content">
+    <strong>Codex が実装</strong>
+    指示書を Codex に渡して実装してもらう。
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">4</div>
+  <div class="flow-content">
+    <strong>Claude がレビュー</strong>
+    差分を確認。問題なければ commit → push → main マージ。
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">5</div>
+  <div class="flow-content">
+    <strong>人間が実機確認</strong>
+    iPhone Safari で動作確認。GAS変更がある場合はデプロイも。
+  </div>
+</div>
+
+<h3>ブランチ運用</h3>
+<div class="card">
+  <ul>
+    <li><code>main</code> — 本番ブランチ。GitHub Pages はここから配信される</li>
+    <li><code>work/ai</code> — AI作業用ブランチ。すべての変更はここで行い、確認後に main にマージ</li>
+  </ul>
+  <p><strong>main に直接 push しない。</strong>必ず work/ai → main のマージで反映する。</p>
+</div>
+
+<h3>バージョン更新のチェックリスト</h3>
+<p>フロントエンドを変更したら、以下の <strong>5箇所</strong> を揃えること:</p>
+<ol>
+  <li><code>index.html</code> の <code>app.js?v=X.X.X</code></li>
+  <li><code>index.html</code> の <code>styles.css?v=X.X.X</code></li>
+  <li><code>index.html</code> の <code>.version-footer</code>（ポータル下部）</li>
+  <li><code>index.html</code> の <code>.app-version</code>（設定画面）</li>
+  <li><code>AI_WORK_CONTEXT.md</code> の「現在のバージョン」</li>
+</ol>
+
+<!-- ============================================ -->
+<h2 id="gas-policy">4. GAS更新の考え方</h2>
+
+<h3>方針: GASは最小限しか触らない</h3>
+
+<div class="card">
+  <div class="card-title">なぜか</div>
+  <ul>
+    <li><strong>デプロイ手順が手動</strong>: GASエディタで貼り替え → 手動デプロイが必要</li>
+    <li><strong>URLを壊すリスク</strong>: 「新しいデプロイ」を押すとURLが変わり、全端末で再設定が必要</li>
+    <li><strong>テストしにくい</strong>: GASにはステージング環境がない。本番に直接反映される</li>
+    <li><strong>フロントだけで解決できることが多い</strong>: UI改善やキャッシュ制御はJS/CSSだけで完結する</li>
+  </ul>
+</div>
+
+<h3>GAS変更が必要な場合の手順</h3>
+
+<div class="flow-step">
+  <div class="flow-num">1</div>
+  <div class="flow-content">
+    <strong>リポジトリの <code>gas/Code.gs</code> を更新</strong>
+    Claude/Codex が work/ai ブランチで修正 → main にマージ。
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">2</div>
+  <div class="flow-content">
+    <strong>GASエディタでコードを貼り替え</strong>
+    ブラウザで GAS エディタを開き、Code.gs の内容を丸ごとコピペ。
+  </div>
+</div>
+<div class="flow-step">
+  <div class="flow-num">3</div>
+  <div class="flow-content">
+    <strong>「デプロイを管理」→ 既存デプロイを編集 → 新バージョン → デプロイ</strong>
+  </div>
+</div>
+
+<div class="warning">
+  <strong>「新しいデプロイ」は絶対に押さない。</strong>URLが変わり、全端末で再設定が必要になる。<br>
+  必ず「デプロイを管理」→ 鉛筆アイコン →「新バージョン」で更新する。
+</div>
+
+<h3>自動化をあえてしていない理由</h3>
+<p>
+  GAS のデプロイは Google の仕組み上 CLI から自動化できるが（clasp 等）、
+  このプロジェクトでは<strong>意図的に手動</strong>にしている。
+</p>
+<ul>
+  <li>GAS変更は年に数回程度。自動化するほどの頻度ではない</li>
+  <li>手動のほうが「何を反映したか」を人間が確認できて安全</li>
+  <li>clasp を導入すると開発環境の依存が増える</li>
+</ul>
+
+<!-- ============================================ -->
+<h2 id="common-tasks">5. よくある作業パターン</h2>
+
+<h3>パターンA: UI改善をしたいとき</h3>
+<div class="card">
+  <p><strong>例</strong>: ボタンの見た目を変えたい、余白を調整したい</p>
+  <ol>
+    <li>Claude に現状を見てもらい、改善方針を相談</li>
+    <li>CSS/HTMLだけの変更なら Claude が直接修正・commit できる（<a href="#claude-conditions">条件あり</a>）</li>
+    <li>JS変更を伴う場合は Codex に指示書を渡す</li>
+    <li>実機確認 → main マージ</li>
+  </ol>
+  <p><span class="tag tag-safe">GAS変更なし</span> フロントだけで完結。気軽にできる。</p>
+</div>
+
+<h3>パターンB: データ構造を少し変えたいとき</h3>
+<div class="card">
+  <p><strong>例</strong>: 買い物リストに「カテゴリ」列を追加したい</p>
+  <ol>
+    <li>Claude に設計を相談（データ構造の影響範囲を確認）</li>
+    <li>Codex 向け指示書を作成（フロント + GAS の変更仕様）</li>
+    <li>Codex が実装 → Claude がレビュー → commit</li>
+    <li>スプレッドシートに列を手動追加（既存データとの互換性を確認）</li>
+    <li>GASエディタでコードを貼り替え → 既存デプロイを更新</li>
+  </ol>
+  <p><span class="tag tag-important">GAS変更あり</span> 手動デプロイが必要。慎重に。</p>
+</div>
+
+<h3>パターンC: AIから提案をもらって改善するとき</h3>
+<div class="card">
+  <p><strong>例</strong>: 「全体を見て改善点を洗い出して」</p>
+  <ol>
+    <li>Claude にコード全体のレビューを依頼</li>
+    <li>優先度付きの提案リストをもらう</li>
+    <li>やりたいものを選んで承認</li>
+    <li>パターンA or B の流れで実装</li>
+  </ol>
+  <p><span class="tag tag-info">設計フェーズ</span> まず提案だけもらい、実装するかは自分で決める。</p>
+</div>
+
+<h3 id="claude-conditions">Claude が直接コード変更できる条件（6つすべて満たす場合のみ）</h3>
+<ol>
+  <li>変更内容が表示・レイアウト・CSS調整のみ</li>
+  <li>変更ファイル数が2ファイル以下</li>
+  <li>GAS / API / データ構造に影響しない</li>
+  <li>既存仕様を変えない（見た目のみ）</li>
+  <li>作業ブランチが <code>work/ai</code></li>
+  <li>commit メッセージが <code>fix(ui): ...</code> 形式</li>
+</ol>
+
+<!-- ============================================ -->
+<h2 id="troubleshooting">6. トラブル時の思考ガイド</h2>
+
+<h3>まず疑う3つのポイント</h3>
+
+<table>
+  <tr><th>順位</th><th>疑う箇所</th><th>確認方法</th></tr>
+  <tr>
+    <td>1</td>
+    <td><strong>キャッシュ（localStorage）</strong></td>
+    <td>設定画面 →「キャッシュをクリア」。古いデータが表示されている可能性</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><strong>GASデプロイ</strong></td>
+    <td>Code.gs を変更した後に「新バージョン」でデプロイしたか？設定画面 →「接続テスト」</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><strong>フロントのバージョン</strong></td>
+    <td>ポータル下部のバージョン番号が最新か？古い場合はブラウザキャッシュをクリア</td>
+  </tr>
+</table>
+
+<h3>よくある症状と対処</h3>
+
+<div class="card">
+  <div class="card-title">「通信エラー」が出る</div>
+  <ul>
+    <li>設定画面の API URL が正しいか確認（<code>/exec</code> で終わるか？）</li>
+    <li>接続テストを実行</li>
+    <li>GASのデプロイが有効か確認（「デプロイを管理」で状態を見る）</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-title">データが古いまま更新されない</div>
+  <ul>
+    <li>更新ボタン（ヘッダー右上）をタップ</li>
+    <li>それでもダメなら設定画面 →「キャッシュをクリア」</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-title">GitHub Pages に変更が反映されない</div>
+  <ul>
+    <li><code>main</code> ブランチにマージ・push したか確認</li>
+    <li>GitHub Pages の反映には数分かかることがある</li>
+    <li>ブラウザのキャッシュが残っている場合は強制リロード</li>
+    <li><code>?v=</code> のバージョン番号を上げ忘れていないか確認</li>
+  </ul>
+</div>
+
+<div class="card">
+  <div class="card-title">GASで「権限エラー」が出る</div>
+  <ul>
+    <li>初回デプロイ時は権限承認が必要（「詳細」→「安全でないページに移動」→「許可」）</li>
+    <li>コードを大きく変更した場合、再承認が必要なことがある</li>
+  </ul>
+</div>
+
+<h3>AIに聞くときのコツ</h3>
+<div class="card">
+  <ul>
+    <li><strong>最初に</strong> <code>AI_WORK_CONTEXT.md</code> <strong>を読ませる</strong> — プロジェクトのルールと現状が入っている</li>
+    <li><strong>「調査して」から始める</strong> — いきなり実装を頼まない。まず現状把握</li>
+    <li><strong>症状を具体的に伝える</strong> — 「動かない」ではなく「買い物リストで追加ボタンを押すと通信エラーが出る」</li>
+    <li><strong>スクリーンショットがあれば見せる</strong> — Claude Code は画像を読める</li>
+  </ul>
+</div>
+
+<h3>触らないほうがいい領域</h3>
+<div class="warning">
+  <ul>
+    <li><strong>GAS の doGet / doPost / handleRequest のルーティング構造</strong> — 全APIの入り口。壊すと全機能が止まる</li>
+    <li><strong>スプレッドシートの共有設定</strong> — 非公開のままにしておくこと</li>
+    <li><strong>iPhone Safari の CORS 回避策</strong> — <code>text/plain</code> / POST の組み合わせは意図的な設計。理由なく変えない</li>
+    <li><strong>GAS の「新しいデプロイ」ボタン</strong> — URLが変わる。必ず「既存デプロイの編集」で更新</li>
+  </ul>
+</div>
+
+<!-- ============================================ -->
+<h2>付録: ドキュメント一覧</h2>
+<table>
+  <tr><th>ファイル</th><th>内容</th><th>いつ読むか</th></tr>
+  <tr><td><code>AI_WORK_CONTEXT.md</code></td><td>AI向けの共通コンテキスト（ルール・制約）</td><td>AI作業開始時に必ず</td></tr>
+  <tr><td><code>CURRENT_STATUS.md</code></td><td>実装状況・課題・作業履歴</td><td>「今どこまでできてるか」知りたいとき</td></tr>
+  <tr><td><code>PROJECT_CONTEXT.md</code></td><td>アーキテクチャ・設計方針の詳細</td><td>構成を深く知りたいとき</td></tr>
+  <tr><td><code>SETUP.md</code></td><td>セットアップ手順（実値あり）</td><td>環境を作り直すとき</td></tr>
+  <tr><td><code>RESUME_PROMPT.md</code></td><td>AI向け再開プロンプト集</td><td>AI会話を新しく始めるとき</td></tr>
+  <tr><td><code>MANUAL.html</code></td><td>このファイル</td><td>久しぶりに開発するとき</td></tr>
+</table>
+
+<p class="last-updated">
+  家族ポータル 開発・運用マニュアル v1.0<br>
+  最終更新: 2026年2月9日
+</p>
+
+</body>
+</html>
