@@ -21,7 +21,7 @@
     <title>家族ポータル</title>
 
     <!-- スタイルシート -->
-    <link rel="stylesheet" href="./css/styles.css?v=2.3.0">
+    <link rel="stylesheet" href="./css/styles.css?v=2.3.1">
 </head>
 <body>
     <!-- ============================================
@@ -73,11 +73,6 @@
                     </div>
                     <!-- 画像設定用の非表示input -->
                     <input type="file" id="top-image-input" accept="image/*" class="hidden">
-                    <!-- 画像設定時の操作ボタン -->
-                    <div id="top-image-actions" class="top-image-actions hidden">
-                        <button id="change-image-btn" class="image-action-btn">変更</button>
-                        <button id="delete-image-btn" class="image-action-btn danger">削除</button>
-                    </div>
                 </div>
 
                 <!-- ピン留めメモ表示エリア -->
@@ -137,7 +132,7 @@
                 </div>
 
                 <!-- バージョン表記 -->
-                <p class="version-footer">v2.3.0</p>
+                <p class="version-footer">v2.3.1</p>
             </section>
 
             <!-- ========== 共有メモアプリ ========== -->
@@ -239,6 +234,8 @@
                             表示用キャッシュのみクリアします。<br>
                             最新データを強制的に再取得したい場合に使用。
                         </p>
+                        <button id="delete-top-image-settings" class="secondary-btn danger-outline">トップ画像を削除</button>
+                        <p class="setting-hint">トップ画像を未設定の状態に戻します。</p>
                         <button id="clear-all-settings" class="secondary-btn danger-outline">すべての設定をクリア</button>
                         <p class="setting-hint">
                             API URLを含むすべての設定をクリアします。<br>
@@ -263,7 +260,7 @@
 
                 <div class="settings-section">
                     <h2 class="section-title">このアプリについて</h2>
-                    <p class="app-version">家族ポータル v2.3.0</p>
+                    <p class="app-version">家族ポータル v2.3.1</p>
                     <p class="setting-hint">夫婦2人で情報を共有するためのシンプルなポータルアプリです。</p>
                 </div>
             </section>
@@ -285,6 +282,6 @@
 
     <!-- JavaScript（単一ファイルに統合）-->
     <!-- v2.2.5: ポータルにバージョン表記追加 -->
-    <script src="./js/app.js?v=2.3.0"></script>
+    <script src="./js/app.js?v=2.3.1"></script>
 </body>
 </html>

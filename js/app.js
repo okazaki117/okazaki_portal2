@@ -1198,6 +1198,12 @@ function setupEventListeners() {
         clearDataCacheBtn.addEventListener('click', clearDataCache);
     }
 
+    // 設定：トップ画像削除
+    const deleteTopImageSettingsBtn = document.getElementById('delete-top-image-settings');
+    if (deleteTopImageSettingsBtn) {
+        deleteTopImageSettingsBtn.addEventListener('click', deleteTopImage);
+    }
+
     // 設定：すべてクリア
     const clearAllSettingsBtn = document.getElementById('clear-all-settings');
     if (clearAllSettingsBtn) {
@@ -1219,24 +1225,6 @@ function setupEventListeners() {
         topImageInput.addEventListener('change', handleTopImageSelect);
     }
 
-    // トップ画像：変更ボタン
-    const changeImageBtn = document.getElementById('change-image-btn');
-    if (changeImageBtn) {
-        changeImageBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const input = document.getElementById('top-image-input');
-            if (input) input.click();
-        });
-    }
-
-    // トップ画像：削除ボタン
-    const deleteImageBtn = document.getElementById('delete-image-btn');
-    if (deleteImageBtn) {
-        deleteImageBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            deleteTopImage();
-        });
-    }
 }
 
 /* ============================================
@@ -1254,7 +1242,6 @@ async function loadTopImage() {
     const container = document.getElementById('top-image-container');
     const placeholder = document.getElementById('top-image-placeholder');
     const imageEl = document.getElementById('top-image');
-    const actions = document.getElementById('top-image-actions');
 
     if (!container || !imageEl) return;
 
@@ -1262,7 +1249,6 @@ async function loadTopImage() {
     if (!CONFIG.API_URL) {
         if (placeholder) placeholder.classList.remove('hidden');
         imageEl.classList.add('hidden');
-        if (actions) actions.classList.add('hidden');
         return;
     }
 
@@ -1272,7 +1258,6 @@ async function loadTopImage() {
         imageEl.src = cached.base64;
         imageEl.classList.remove('hidden');
         if (placeholder) placeholder.classList.add('hidden');
-        if (actions) actions.classList.remove('hidden');
         log('Top image loaded from cache');
     } else {
         // キャッシュなし：ローディング表示
@@ -1290,14 +1275,12 @@ async function loadTopImage() {
             imageEl.src = result.base64;
             imageEl.classList.remove('hidden');
             if (placeholder) placeholder.classList.add('hidden');
-            if (actions) actions.classList.remove('hidden');
             saveCache(CONFIG.CACHE_KEY_TOP_IMAGE, { hasImage: true, base64: result.base64 });
             log('Top image loaded from API');
         } else {
             // 画像なし
             imageEl.classList.add('hidden');
             if (placeholder) placeholder.classList.remove('hidden');
-            if (actions) actions.classList.add('hidden');
             saveCache(CONFIG.CACHE_KEY_TOP_IMAGE, { hasImage: false });
         }
     } catch (error) {
