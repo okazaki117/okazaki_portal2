@@ -35,6 +35,7 @@ okazaki_portal2/
 ├── css/styles.css        # 全スタイル
 ├── gas/Code.gs           # GASに貼り付けるコード（このリポジトリ内はコピー）
 ├── icons/                # PWAアイコン
+├── codex-tasks/          # Claude → Codex への作業指示書置き場
 ├── AI_WORK_CONTEXT.md    # ← このファイル（AI共通コンテキスト）
 ├── PROJECT_CONTEXT.md    # アーキテクチャ・設計方針の詳細
 ├── CURRENT_STATUS.md     # 実装状況・課題・作業履歴
@@ -90,12 +91,23 @@ Claude は原則として実装や git 操作を行わない。ただし、以�
 
 Codex は人間の明示的な依頼がある場合のみ git 操作（commit / push）を行う。
 
+### Codex への作業指示の受け渡し
+
+Claude が Codex 向けの実装タスクを作成した場合、`codex-tasks/` フォルダにファイルとして出力する。
+
+- 配置先: `codex-tasks/`
+- ファイル名: `連番_要約.md`（例: `001_fix-header-overlap.md`）
+- 人間がこのファイルを Codex に渡して実装を依頼する
+- Codex は作業完了後、使用済みの指示書を削除してよい
+
 ### 標準作業フロー
 
 ```
 1. 調査・設計フェーズ（Claude）→ 要求の整理、仕様の明確化、変更方針の提示
+                                → 必要に応じて codex-tasks/ に指示書を出力
 2. 承認（人間）               → 方針の確認と実装の指示
-3. 実装フェーズ（Codex）      → 承認された仕様に基づくコード変更
+                                → 指示書を Codex に渡す
+3. 実装フェーズ（Codex）      → 指示書に基づくコード変更
 4. 確認（人間）               → 結果の確認、必要に応じてフィードバック
 ```
 
