@@ -144,8 +144,8 @@ body {
 ============================================ */
 #main-content {
     flex: 1;
-    /* ヘッダー分の余白を確保（fixed対応） */
-    padding-top: calc(var(--header-height) + var(--safe-top));
+    /* ヘッダー分の余白 + 余白8pxを確保（fixed対応） */
+    padding-top: calc(var(--header-height) + var(--safe-top) + 8px);
     padding-left: calc(16px + var(--safe-left));
     padding-right: calc(16px + var(--safe-right));
     padding-bottom: calc(16px + var(--safe-bottom));
