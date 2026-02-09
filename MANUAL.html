@@ -199,6 +199,7 @@
   <ol>
     <li><a href="#overview">このアプリは何か</a></li>
     <li><a href="#architecture">システム全体像</a></li>
+    <li><a href="#env-setup">環境の準備と再構築</a></li>
     <li><a href="#dev-flow">開発・更新の基本フロー</a></li>
     <li><a href="#gas-policy">GAS更新の考え方</a></li>
     <li><a href="#common-tasks">よくある作業パターン</a></li>
@@ -297,7 +298,182 @@
 <p>→ <strong>GAS URLが漏れない限り、第三者はデータにアクセスできない。</strong></p>
 
 <!-- ============================================ -->
-<h2 id="dev-flow">3. 開発・更新の基本フロー</h2>
+<h2 id="env-setup">3. 環境の準備と再構築</h2>
+
+<p>「久しぶりに触るけど、何から始めればいい？」という場面ごとに手順をまとめた。</p>
+
+<h3>A. 普段の作業再開（いつもの手順・3分）</h3>
+
+<div class="card">
+  <div class="card-title">PowerShellを開いて、以下のコマンドを順に実行</div>
+<pre>
+# 1. WSLを起動
+wsl
+
+# 2. プロジェクトディレクトリに移動
+cd ~/projects/okazaki_portal2
+
+# 3. 最新のコードを取得
+git checkout main
+git pull origin main
+
+# 4. 作業ブランチに切り替え、mainの変更を取り込む
+git checkout work/ai
+git merge main
+
+# 5. Claude Code を起動
+claude
+</pre>
+  <p>Claude が起動したら、最初に以下を伝える：</p>
+<pre>
+AI_WORK_CONTEXT.md を読んで、現在の状態を把握してください。
+</pre>
+</div>
+
+<h3>B. PCリセット後の環境構築（フルセットアップ・30分）</h3>
+
+<div class="card">
+  <div class="card-title">Step 1: WSLのインストール（PowerShell を管理者として実行）</div>
+<pre>
+# WSLとUbuntuをインストール（再起動が必要）
+wsl --install -d Ubuntu
+
+# インストール後、PC を再起動
+# 再起動後、Ubuntu が自動で開くのでユーザー名とパスワードを設定
+</pre>
+</div>
+
+<div class="card">
+  <div class="card-title">Step 2: 開発ツールのインストール（WSL内で実行）</div>
+<pre>
+# パッケージを最新化
+sudo apt update && sudo apt upgrade -y
+
+# Git（通常はプリインストール済み。念のため）
+sudo apt install -y git
+
+# Node.js 18 + npm
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# 確認
+node --version   # v18.x.x
+npm --version    # v10.x.x
+</pre>
+</div>
+
+<div class="card">
+  <div class="card-title">Step 3: GitHub CLI のインストール（WSL内で実行）</div>
+<pre>
+# GitHub CLI をインストール
+sudo apt install -y gh
+
+# もし上記で入らない場合（Ubuntu 22.04以前）:
+# curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+#   | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+# echo "deb [arch=$(dpkg --print-architecture) \
+#   signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+#   https://cli.github.com/packages stable main" \
+#   | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+# sudo apt update && sudo apt install -y gh
+
+# GitHub にログイン（ブラウザ認証）
+gh auth login
+# → GitHub.com → HTTPS → ブラウザで認証 を選択
+</pre>
+</div>
+
+<div class="card">
+  <div class="card-title">Step 4: Claude Code のインストール（WSL内で実行）</div>
+<pre>
+# Claude Code CLI をグローバルインストール
+npm install -g @anthropic-ai/claude-code
+
+# 確認
+claude --version
+
+# 初回起動（APIキーの設定が求められる）
+claude
+</pre>
+  <p>Anthropic の API キーまたは Claude のアカウント認証が必要。画面の指示に従う。</p>
+</div>
+
+<div class="card">
+  <div class="card-title">Step 5: リポジトリのクローン（WSL内で実行）</div>
+<pre>
+# プロジェクト用ディレクトリを作成
+mkdir -p ~/projects && cd ~/projects
+
+# リポジトリをクローン
+git clone https://github.com/okazaki117/okazaki_portal2.git
+cd okazaki_portal2
+
+# 作業ブランチを作成（初回のみ）
+git checkout -b work/ai
+git push -u origin work/ai
+
+# Git のユーザー情報を設定（未設定の場合）
+git config user.name "あなたの名前"
+git config user.email "あなたのメール"
+</pre>
+</div>
+
+<div class="card">
+  <div class="card-title">Step 6: GAS の再セットアップ（ブラウザで実行）</div>
+  <p>GAS側は PCリセットの影響を受けない（Googleアカウントに紐づくため）。</p>
+  <p>ただし、新しい環境からスプレッドシートを確認したい場合：</p>
+  <ol>
+    <li><a href="https://drive.google.com">Google Drive</a> にアクセス</li>
+    <li>スプレッドシート「家族ポータルデータ」を開く</li>
+    <li>拡張機能 → Apps Script で GAS エディタを開く</li>
+    <li>「デプロイを管理」で既存デプロイが有効か確認</li>
+  </ol>
+  <p><strong>GAS URLは変わらない。</strong>再設定の必要はない。</p>
+</div>
+
+<h3>C. 環境の動作確認</h3>
+
+<div class="card">
+  <div class="card-title">すべてのツールが揃っているか確認</div>
+<pre>
+# WSL 内で実行
+git --version          # v2.x.x
+node --version         # v18.x.x
+npm --version          # v10.x.x
+gh --version           # v2.x.x
+claude --version       # v2.x.x
+</pre>
+  <p>すべてバージョンが表示されればOK。</p>
+</div>
+
+<div class="card">
+  <div class="card-title">リポジトリが正常か確認</div>
+<pre>
+cd ~/projects/okazaki_portal2
+git status             # ブランチとファイルの状態を確認
+git remote -v          # origin が github.com/okazaki117/okazaki_portal2 を指しているか
+git log --oneline -5   # 最近のコミットが表示されるか
+</pre>
+</div>
+
+<h3>D. ローカルでの動作確認（任意）</h3>
+
+<div class="card">
+  <div class="card-title">ローカルサーバーで画面を確認したい場合</div>
+<pre>
+cd ~/projects/okazaki_portal2
+
+# Python の簡易サーバーを使う（追加インストール不要）
+python3 -m http.server 8080
+
+# ブラウザで http://localhost:8080 にアクセス
+# ※ API接続にはアプリの設定画面でGAS URLを入力する必要がある
+# Ctrl+C でサーバーを停止
+</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="dev-flow">4. 開発・更新の基本フロー</h2>
 
 <h3>環境の前提</h3>
 <table>
@@ -388,7 +564,7 @@
 </ol>
 
 <!-- ============================================ -->
-<h2 id="gas-policy">4. GAS更新の考え方</h2>
+<h2 id="gas-policy">5. GAS更新の考え方</h2>
 
 <h3>方針: GASは最小限しか触らない</h3>
 
@@ -442,7 +618,7 @@
 </ul>
 
 <!-- ============================================ -->
-<h2 id="common-tasks">5. よくある作業パターン</h2>
+<h2 id="common-tasks">6. よくある作業パターン</h2>
 
 <h3>パターンA: UI改善をしたいとき</h3>
 <div class="card">
@@ -492,7 +668,7 @@
 </ol>
 
 <!-- ============================================ -->
-<h2 id="troubleshooting">6. トラブル時の思考ガイド</h2>
+<h2 id="troubleshooting">7. トラブル時の思考ガイド</h2>
 
 <h3>まず疑う3つのポイント</h3>
 
@@ -585,8 +761,8 @@
 </table>
 
 <p class="last-updated">
-  家族ポータル 開発・運用マニュアル v1.0<br>
-  最終更新: 2026年2月9日
+  家族ポータル 開発・運用マニュアル v1.1<br>
+  最終更新: 2026年2月10日
 </p>
 
 </body>
