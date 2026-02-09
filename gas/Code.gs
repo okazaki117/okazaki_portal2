@@ -52,8 +52,8 @@ function setupSheets() {
   let shoppingSheet = ss.getSheetByName('Shopping');
   if (!shoppingSheet) {
     shoppingSheet = ss.insertSheet('Shopping');
-    shoppingSheet.appendRow(['id', 'name', 'completed', 'deleted', 'createdAt', 'updatedAt']);
-    shoppingSheet.getRange(1, 1, 1, 6).setFontWeight('bold');
+    shoppingSheet.appendRow(['id', 'name', 'completed', 'deleted', 'category', 'createdAt', 'updatedAt']);
+    shoppingSheet.getRange(1, 1, 1, 7).setFontWeight('bold');
     shoppingSheet.setFrozenRows(1);
   }
 
@@ -423,6 +423,7 @@ function addShopping(item) {
     item.name,
     item.completed === true || item.completed === 'true',
     item.deleted === true || item.deleted === 'true',
+    item.category || 'soon',
     item.createdAt || new Date().toISOString(),
     item.updatedAt || new Date().toISOString()
   ]);
@@ -444,11 +445,12 @@ function updateShopping(item) {
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === item.id) {
-      sheet.getRange(i + 1, 1, 1, 6).setValues([[
+      sheet.getRange(i + 1, 1, 1, 7).setValues([[
         item.id,
         item.name,
         item.completed === true || item.completed === 'true',
         item.deleted === true || item.deleted === 'true',
+        item.category || 'soon',
         item.createdAt,
         item.updatedAt || new Date().toISOString()
       ]]);

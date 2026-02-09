@@ -44,7 +44,7 @@ const state = {
     wishes: [],
     shopping: [],
     wishFilter: 'all',
-    shoppingFilter: 'active',
+    shoppingFilter: 'soon',
     isLoading: false
 };
 
@@ -831,9 +831,12 @@ function renderShopping() {
     if (!el) return;
 
     let filtered = state.shopping.filter(item => !item.deleted);
+    const filter = state.shoppingFilter;
 
-    if (state.shoppingFilter === 'active') {
-        filtered = filtered.filter(item => !item.completed);
+    if (filter === 'soon') {
+        filtered = filtered.filter(item => !item.completed && (item.category || 'soon') === 'soon');
+    } else if (filter === 'later') {
+        filtered = filtered.filter(item => !item.completed && item.category === 'later');
     } else {
         filtered = filtered.filter(item => item.completed);
     }
@@ -841,55 +844,84 @@ function renderShopping() {
     filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     if (filtered.length === 0) {
-        const message = state.shoppingFilter === 'active'
-            ? '買い物リストは空です'
-            : '購入済みアイテムはありません';
-        el.innerHTML = `<p class="empty-message">${message}</p>`;
+        const messages = {
+            soon: '「すぐ買う」アイテムはありません',
+            later: '「あとで買う」アイテムはありません',
+            completed: '購入済みアイテムはありません'
+        };
+        el.innerHTML = `<p class="empty-message">${messages[filter]}</p>`;
         return;
     }
 
-    el.innerHTML = filtered.map(item => `
-        <div class="shopping-item ${item.completed ? 'completed' : ''}" data-id="${item.id}">
-            <div class="shopping-checkbox ${item.completed ? 'checked' : ''}"
-                 onclick="toggleShoppingItem('${item.id}')"></div>
-            <span class="shopping-name">${escapeHtml(item.name)}</span>
-            <button class="action-btn delete-btn" onclick="deleteShoppingItem('${item.id}')">×</button>
-        </div>
-    `).join('');
+    el.innerHTML = filtered.map(item => {
+        let moveBtn = '';
+        if (filter === 'soon') {
+            moveBtn = `<button class="action-btn move-btn" onclick="moveShoppingCategory('${item.id}', 'later')" title="あとで買う">↓</button>`;
+        } else if (filter === 'later') {
+            moveBtn = `<button class="action-btn move-btn" onclick="moveShoppingCategory('${item.id}', 'soon')" title="すぐ買う">↑</button>`;
+        }
+
+        return `
+            <div class="shopping-item ${item.completed ? 'completed' : ''}" data-id="${item.id}">
+                <div class="shopping-checkbox ${item.completed ? 'checked' : ''}"
+                     onclick="toggleShoppingItem('${item.id}')"></div>
+                <span class="shopping-name">${escapeHtml(item.name)}</span>
+                ${moveBtn}
+                <button class="action-btn delete-btn" onclick="deleteShoppingItem('${item.id}')">×</button>
+            </div>
+        `;
+    }).join('');
 }
 
 async function addShoppingItem() {
     const input = document.getElementById('shopping-input');
-    const name = input?.value.trim();
+    const rawValue = input?.value.trim();
 
-    if (!name) {
+    if (!rawValue) {
         showToast('アイテム名を入力してください');
         return;
     }
 
-    const newItem = {
+    const names = rawValue.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    if (names.length === 0) {
+        showToast('アイテム名を入力してください');
+        return;
+    }
+
+    const newItems = names.map(name => ({
         id: generateId(),
         name: name,
         completed: false,
         deleted: false,
+        category: 'soon',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-    };
+    }));
 
     // 楽観的UI更新
-    state.shopping.unshift(newItem);
+    state.shopping.unshift(...newItems);
     renderShopping();
     saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
     if (input) input.value = '';
 
     // バックグラウンドでAPI保存
-    const result = await apiRequest('addShopping', newItem);
+    let failedCount = 0;
+    for (const item of newItems) {
+        const result = await apiRequest('addShopping', item);
+        if (!result) failedCount++;
+    }
 
-    if (result) {
-        showToast('追加しました');
+    if (failedCount === 0) {
+        showToast(`${newItems.length}件追加しました`);
+    } else if (failedCount < newItems.length) {
+        showToast(`${newItems.length - failedCount}件追加、${failedCount}件失敗`);
     } else {
         // 失敗したらロールバック
-        state.shopping = state.shopping.filter(i => i.id !== newItem.id);
+        const failedIds = new Set(newItems.map(i => i.id));
+        state.shopping = state.shopping.filter(i => !failedIds.has(i.id));
         renderShopping();
         saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
         showToast('追加に失敗しました');
@@ -940,6 +972,33 @@ async function deleteShoppingItem(id) {
         renderShopping();
         saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
         showToast('削除に失敗しました');
+    }
+}
+
+async function moveShoppingCategory(id, newCategory) {
+    const item = state.shopping.find(i => i.id === id);
+    if (!item) return;
+
+    const oldCategory = item.category || 'soon';
+    item.category = newCategory;
+    item.updatedAt = new Date().toISOString();
+
+    // 楽観的UI更新
+    renderShopping();
+    saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+
+    const label = newCategory === 'soon' ? '「すぐ買う」' : '「あとで買う」';
+    showToast(`${label}に移動しました`);
+
+    // バックグラウンドでAPI更新
+    const result = await apiRequest('updateShopping', item);
+
+    if (!result) {
+        // 失敗したらロールバック
+        item.category = oldCategory;
+        renderShopping();
+        saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
+        showToast('移動に失敗しました');
     }
 }
 
@@ -1104,7 +1163,10 @@ function setupEventListeners() {
     const shoppingInput = document.getElementById('shopping-input');
     if (shoppingInput) {
         shoppingInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') addShoppingItem();
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                addShoppingItem();
+            }
         });
     }
 

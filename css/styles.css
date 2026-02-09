@@ -628,6 +628,22 @@ body {
     color: var(--text-light);
 }
 
+#page-shopping .input-hint {
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+.move-btn {
+    color: var(--primary-color);
+    font-size: 1rem;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    background: none;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 /* ============================================
    設定画面
 ============================================ */
