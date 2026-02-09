@@ -206,6 +206,43 @@ function createResponse(data) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+function getSheetHeaders(sheet) {
+  return sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+}
+
+function buildRowFromHeaders(headers, data, options) {
+  const defaults = options && options.defaults ? options.defaults : {};
+  const now = new Date().toISOString();
+
+  return headers.map(header => {
+    const value = data ? data[header] : undefined;
+
+    if (header === 'pinned' || header === 'completed' || header === 'deleted') {
+      return value === true || value === 'true';
+    }
+
+    if (header === 'createdAt') {
+      return value || now;
+    }
+
+    if (header === 'updatedAt') {
+      return value || now;
+    }
+
+    if (header === 'year') {
+      const num = Number(value);
+      if (!isNaN(num)) return num;
+      return defaults.year !== undefined ? defaults.year : num;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(defaults, header)) {
+      return value || defaults[header];
+    }
+
+    return value;
+  });
+}
+
 /* ============================================
    メモ関連
 ============================================ */
@@ -248,14 +285,9 @@ function addMemo(memo) {
     return { success: false, error: 'Memos sheet not found' };
   }
 
-  sheet.appendRow([
-    memo.id,
-    memo.content,
-    memo.pinned === true || memo.pinned === 'true',
-    memo.deleted === true || memo.deleted === 'true',
-    memo.createdAt || new Date().toISOString(),
-    memo.updatedAt || new Date().toISOString()
-  ]);
+  const headers = getSheetHeaders(sheet);
+  const row = buildRowFromHeaders(headers, memo);
+  sheet.appendRow(row);
 
   return { success: true, id: memo.id };
 }
@@ -271,17 +303,12 @@ function updateMemo(memo) {
   }
 
   const data = sheet.getDataRange().getValues();
+  const headers = data[0] || [];
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === memo.id) {
-      sheet.getRange(i + 1, 1, 1, 6).setValues([[
-        memo.id,
-        memo.content,
-        memo.pinned === true || memo.pinned === 'true',
-        memo.deleted === true || memo.deleted === 'true',
-        memo.createdAt,
-        memo.updatedAt || new Date().toISOString()
-      ]]);
+      const row = buildRowFromHeaders(headers, memo);
+      sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return { success: true };
     }
   }
@@ -332,16 +359,15 @@ function addWish(wish) {
     return { success: false, error: 'Wishes sheet not found' };
   }
 
-  sheet.appendRow([
-    wish.id,
-    wish.title,
-    Number(wish.year) || new Date().getFullYear(),
-    wish.status || 'not_started',
-    wish.comment || '',
-    wish.deleted === true || wish.deleted === 'true',
-    wish.createdAt || new Date().toISOString(),
-    wish.updatedAt || new Date().toISOString()
-  ]);
+  const headers = getSheetHeaders(sheet);
+  const row = buildRowFromHeaders(headers, wish, {
+    defaults: {
+      year: new Date().getFullYear(),
+      status: 'not_started',
+      comment: ''
+    }
+  });
+  sheet.appendRow(row);
 
   return { success: true, id: wish.id };
 }
@@ -357,19 +383,16 @@ function updateWish(wish) {
   }
 
   const data = sheet.getDataRange().getValues();
+  const headers = data[0] || [];
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === wish.id) {
-      sheet.getRange(i + 1, 1, 1, 8).setValues([[
-        wish.id,
-        wish.title,
-        Number(wish.year),
-        wish.status,
-        wish.comment || '',
-        wish.deleted === true || wish.deleted === 'true',
-        wish.createdAt,
-        wish.updatedAt || new Date().toISOString()
-      ]]);
+      const row = buildRowFromHeaders(headers, wish, {
+        defaults: {
+          comment: ''
+        }
+      });
+      sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return { success: true };
     }
   }
@@ -418,15 +441,13 @@ function addShopping(item) {
     return { success: false, error: 'Shopping sheet not found' };
   }
 
-  sheet.appendRow([
-    item.id,
-    item.name,
-    item.completed === true || item.completed === 'true',
-    item.deleted === true || item.deleted === 'true',
-    item.category || 'soon',
-    item.createdAt || new Date().toISOString(),
-    item.updatedAt || new Date().toISOString()
-  ]);
+  const headers = getSheetHeaders(sheet);
+  const row = buildRowFromHeaders(headers, item, {
+    defaults: {
+      category: 'soon'
+    }
+  });
+  sheet.appendRow(row);
 
   return { success: true, id: item.id };
 }
@@ -442,18 +463,16 @@ function updateShopping(item) {
   }
 
   const data = sheet.getDataRange().getValues();
+  const headers = data[0] || [];
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][0] === item.id) {
-      sheet.getRange(i + 1, 1, 1, 7).setValues([[
-        item.id,
-        item.name,
-        item.completed === true || item.completed === 'true',
-        item.deleted === true || item.deleted === 'true',
-        item.category || 'soon',
-        item.createdAt,
-        item.updatedAt || new Date().toISOString()
-      ]]);
+      const row = buildRowFromHeaders(headers, item, {
+        defaults: {
+          category: 'soon'
+        }
+      });
+      sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
       return { success: true };
     }
   }
