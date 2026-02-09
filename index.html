@@ -21,7 +21,7 @@
     <title>家族ポータル</title>
 
     <!-- スタイルシート -->
-    <link rel="stylesheet" href="./css/styles.css?v=2.2.4">
+    <link rel="stylesheet" href="./css/styles.css?v=2.3.0">
 </head>
 <body>
     <!-- ============================================
@@ -137,7 +137,7 @@
                 </div>
 
                 <!-- バージョン表記 -->
-                <p class="version-footer">v2.2.5</p>
+                <p class="version-footer">v2.3.0</p>
             </section>
 
             <!-- ========== 共有メモアプリ ========== -->
@@ -193,13 +193,17 @@
             <section id="page-shopping" class="page">
                 <!-- 入力フォーム -->
                 <div class="input-section">
-                    <input type="text" id="shopping-input" placeholder="買い物アイテムを入力..." />
-                    <button id="shopping-add-btn" class="primary-btn">追加</button>
+                    <textarea id="shopping-input" placeholder="買い物アイテムを入力...&#10;（改行で複数追加）" rows="3"></textarea>
+                    <div class="input-actions">
+                        <span class="input-hint">改行で複数追加可</span>
+                        <button id="shopping-add-btn" class="primary-btn">追加</button>
+                    </div>
                 </div>
 
                 <!-- タブ切り替え -->
                 <div class="filter-tabs">
-                    <button class="filter-tab active" data-filter="active">買うもの</button>
+                    <button class="filter-tab active" data-filter="soon">すぐ買う</button>
+                    <button class="filter-tab" data-filter="later">あとで買う</button>
                     <button class="filter-tab" data-filter="completed">購入済み</button>
                 </div>
 
@@ -259,7 +263,7 @@
 
                 <div class="settings-section">
                     <h2 class="section-title">このアプリについて</h2>
-                    <p class="app-version">家族ポータル v2.2.5</p>
+                    <p class="app-version">家族ポータル v2.3.0</p>
                     <p class="setting-hint">夫婦2人で情報を共有するためのシンプルなポータルアプリです。</p>
                 </div>
             </section>
@@ -281,6 +285,6 @@
 
     <!-- JavaScript（単一ファイルに統合）-->
     <!-- v2.2.5: ポータルにバージョン表記追加 -->
-    <script src="./js/app.js?v=2.2.4"></script>
+    <script src="./js/app.js?v=2.3.0"></script>
 </body>
 </html>
