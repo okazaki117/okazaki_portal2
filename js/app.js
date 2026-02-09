@@ -19,6 +19,9 @@
 /* ============================================
    設定
 ============================================ */
+const IS_LOCALHOST = typeof location !== 'undefined'
+    && (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
 const CONFIG = {
     // API URL は設定画面またはlocalStorageから読み込み
     API_URL: '',
@@ -31,7 +34,7 @@ const CONFIG = {
     CACHE_KEY_TOP_IMAGE: 'portal_cache_top_image',
 
     // デバッグモード
-    DEBUG: true
+    DEBUG: IS_LOCALHOST
 };
 
 /* ============================================
