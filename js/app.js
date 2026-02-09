@@ -856,9 +856,9 @@ function renderShopping() {
     el.innerHTML = filtered.map(item => {
         let moveBtn = '';
         if (filter === 'soon') {
-            moveBtn = `<button class="action-btn move-btn" onclick="moveShoppingCategory('${item.id}', 'later')" title="あとで買う">↓</button>`;
+            moveBtn = `<button class="action-btn move-btn" onclick="moveShoppingCategory('${item.id}', 'later')">あとで</button>`;
         } else if (filter === 'later') {
-            moveBtn = `<button class="action-btn move-btn" onclick="moveShoppingCategory('${item.id}', 'soon')" title="すぐ買う">↑</button>`;
+            moveBtn = `<button class="action-btn move-btn" onclick="moveShoppingCategory('${item.id}', 'soon')">すぐ</button>`;
         }
 
         return `
