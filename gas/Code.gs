@@ -529,6 +529,13 @@ function getSubscriptions() {
         item[header] = row[index] === true || row[index] === 'true';
       } else if (header === 'price') {
         item[header] = Number(row[index]);
+      } else if (header === 'renewalTiming') {
+        var val = row[index];
+        if (val instanceof Date) {
+          item[header] = (val.getMonth() + 1) + '/' + val.getDate();
+        } else {
+          item[header] = val || '';
+        }
       } else {
         item[header] = row[index];
       }
@@ -553,6 +560,12 @@ function addSubscription(data) {
   const row = buildRowFromHeaders(headers, data);
   sheet.appendRow(row);
 
+  var rtIndex = headers.indexOf('renewalTiming');
+  if (rtIndex >= 0) {
+    var lastRow = sheet.getLastRow();
+    sheet.getRange(lastRow, rtIndex + 1).setNumberFormat('@').setValue(data.renewalTiming || '');
+  }
+
   return { success: true, id: data.id };
 }
 
@@ -573,6 +586,10 @@ function updateSubscription(data) {
     if (dataRange[i][0] === data.id) {
       const row = buildRowFromHeaders(headers, data);
       sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
+      var rtIndex = headers.indexOf('renewalTiming');
+      if (rtIndex >= 0) {
+        sheet.getRange(i + 1, rtIndex + 1).setNumberFormat('@').setValue(data.renewalTiming || '');
+      }
       return { success: true };
     }
   }
