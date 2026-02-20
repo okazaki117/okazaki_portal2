@@ -61,8 +61,8 @@ function setupSheets() {
   let subscriptionSheet = ss.getSheetByName('Subscriptions');
   if (!subscriptionSheet) {
     subscriptionSheet = ss.insertSheet('Subscriptions');
-    subscriptionSheet.appendRow(['id', 'name', 'price', 'billingCycle', 'account', 'status', 'deleted', 'createdAt', 'updatedAt']);
-    subscriptionSheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+    subscriptionSheet.appendRow(['id', 'name', 'price', 'billingCycle', 'renewalTiming', 'account', 'status', 'deleted', 'createdAt', 'updatedAt']);
+    subscriptionSheet.getRange(1, 1, 1, 10).setFontWeight('bold');
     subscriptionSheet.setFrozenRows(1);
   }
 

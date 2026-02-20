@@ -21,7 +21,7 @@
     <title>家族ポータル</title>
 
     <!-- スタイルシート -->
-    <link rel="stylesheet" href="./css/styles.css?v=2.4.0">
+    <link rel="stylesheet" href="./css/styles.css?v=2.5.0">
 </head>
 <body>
     <!-- ============================================
@@ -142,7 +142,7 @@
                 </div>
 
                 <!-- バージョン表記 -->
-                <p class="version-footer">v2.4.1</p>
+                <p class="version-footer">v2.5.0</p>
             </section>
 
             <!-- ========== 共有メモアプリ ========== -->
@@ -299,7 +299,7 @@
 
                 <div class="settings-section">
                     <h2 class="section-title">このアプリについて</h2>
-                    <p class="app-version">家族ポータル v2.4.1</p>
+                    <p class="app-version">家族ポータル v2.5.0</p>
                     <p class="setting-hint">夫婦2人で情報を共有するためのシンプルなポータルアプリです。</p>
                 </div>
             </section>
@@ -335,8 +335,13 @@
                 <label for="subscription-billing">課金周期</label>
                 <select id="subscription-billing" required>
                     <option value="monthly">月額</option>
+                    <option value="quarterly">3か月</option>
+                    <option value="semi-annual">半年</option>
                     <option value="yearly">年額</option>
                 </select>
+
+                <label for="subscription-renewal">更新タイミング</label>
+                <input type="text" id="subscription-renewal" placeholder="例: 毎月15日 / 3月1日">
 
                 <label for="subscription-account">引き落とし口座</label>
                 <input type="text" id="subscription-account" placeholder="例: 楽天カード">
@@ -351,6 +356,6 @@
 
     <!-- JavaScript（単一ファイルに統合）-->
     <!-- v2.2.5: ポータルにバージョン表記追加 -->
-    <script src="./js/app.js?v=2.4.1"></script>
+    <script src="./js/app.js?v=2.5.0"></script>
 </body>
 </html>

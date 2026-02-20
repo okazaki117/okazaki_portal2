@@ -1069,6 +1069,12 @@ function renderSubscriptions() {
         if (s.billingCycle === 'yearly') {
             yearlySum += price;
             monthlySum += Math.floor(price / 12);
+        } else if (s.billingCycle === 'semi-annual') {
+            yearlySum += price * 2;
+            monthlySum += Math.floor(price / 6);
+        } else if (s.billingCycle === 'quarterly') {
+            yearlySum += price * 4;
+            monthlySum += Math.floor(price / 3);
         } else {
             monthlySum += price;
             yearlySum += price * 12;
@@ -1097,7 +1103,9 @@ function renderSubscriptions() {
     }
 
     listEl.innerHTML = filtered.map(item => {
-        const cycleLabel = item.billingCycle === 'yearly' ? '年額' : '月額';
+        const cycleLabels = { monthly: '月額', quarterly: '3か月', 'semi-annual': '半年', yearly: '年額' };
+        const cycleLabel = cycleLabels[item.billingCycle] || '月額';
+        const renewalText = item.renewalTiming ? ` ・ ${escapeHtml(item.renewalTiming)}` : '';
         const accountText = item.account ? ` ・ ${escapeHtml(item.account)}` : '';
         const priceText = `¥${Number(item.price || 0).toLocaleString()}`;
         const statusBtn = filter === 'active'
@@ -1110,7 +1118,7 @@ function renderSubscriptions() {
                     <span class="subscription-name">${escapeHtml(item.name)}</span>
                     <span class="subscription-price">${priceText}</span>
                 </div>
-                <div class="subscription-meta">${cycleLabel}${accountText}</div>
+                <div class="subscription-meta">${cycleLabel}${renewalText}${accountText}</div>
                 <div class="subscription-actions">
                     <button class="action-btn" onclick="openSubscriptionModal('${item.id}')">編集</button>
                     ${statusBtn}
@@ -1127,10 +1135,11 @@ function openSubscriptionModal(id = null) {
     const nameInput = document.getElementById('subscription-name');
     const priceInput = document.getElementById('subscription-price');
     const billingSelect = document.getElementById('subscription-billing');
+    const renewalInput = document.getElementById('subscription-renewal');
     const accountInput = document.getElementById('subscription-account');
     const saveBtn = document.getElementById('subscription-save-btn');
 
-    if (!modal || !title || !nameInput || !priceInput || !billingSelect || !accountInput || !saveBtn) return;
+    if (!modal || !title || !nameInput || !priceInput || !billingSelect || !renewalInput || !accountInput || !saveBtn) return;
 
     const subscription = id ? state.subscriptions.find(s => s.id === id) : null;
     state.editingSubscriptionId = subscription ? subscription.id : null;
@@ -1141,6 +1150,7 @@ function openSubscriptionModal(id = null) {
         nameInput.value = subscription.name || '';
         priceInput.value = subscription.price !== undefined ? String(subscription.price) : '';
         billingSelect.value = subscription.billingCycle || 'monthly';
+        renewalInput.value = subscription.renewalTiming || '';
         accountInput.value = subscription.account || '';
     } else {
         title.textContent = 'サブスクを追加';
@@ -1148,6 +1158,7 @@ function openSubscriptionModal(id = null) {
         nameInput.value = '';
         priceInput.value = '';
         billingSelect.value = 'monthly';
+        renewalInput.value = '';
         accountInput.value = '';
     }
 
@@ -1164,13 +1175,15 @@ async function saveSubscription() {
     const nameInput = document.getElementById('subscription-name');
     const priceInput = document.getElementById('subscription-price');
     const billingSelect = document.getElementById('subscription-billing');
+    const renewalInput = document.getElementById('subscription-renewal');
     const accountInput = document.getElementById('subscription-account');
 
-    if (!nameInput || !priceInput || !billingSelect || !accountInput) return;
+    if (!nameInput || !priceInput || !billingSelect || !renewalInput || !accountInput) return;
 
     const name = nameInput.value.trim();
     const priceValue = Number(priceInput.value);
     const billingCycle = billingSelect.value;
+    const renewalTiming = renewalInput.value.trim();
     const account = accountInput.value.trim();
 
     if (!name) {
@@ -1192,6 +1205,7 @@ async function saveSubscription() {
             name: name,
             price: priceValue,
             billingCycle: billingCycle,
+            renewalTiming: renewalTiming,
             account: account,
             status: 'active',
             deleted: false,
@@ -1223,6 +1237,7 @@ async function saveSubscription() {
     target.name = name;
     target.price = priceValue;
     target.billingCycle = billingCycle;
+    target.renewalTiming = renewalTiming;
     target.account = account;
     target.updatedAt = now;
 
