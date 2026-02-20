@@ -1062,16 +1062,21 @@ function renderSubscriptions() {
     if (!listEl || !monthlyEl || !yearlyEl) return;
 
     const activeItems = state.subscriptions.filter(s => !s.deleted && s.status === 'active');
-    const rawMonthly = activeItems.reduce((sum, s) => {
+    let monthlySum = 0;
+    let yearlySum = 0;
+    activeItems.forEach(s => {
         const price = Number(s.price) || 0;
         if (s.billingCycle === 'yearly') {
-            return sum + price / 12;
+            yearlySum += price;
+            monthlySum += Math.floor(price / 12);
+        } else {
+            monthlySum += price;
+            yearlySum += price * 12;
         }
-        return sum + price;
-    }, 0);
+    });
 
-    const monthlyTotal = Math.floor(rawMonthly);
-    const yearlyTotal = monthlyTotal * 12;
+    const monthlyTotal = monthlySum;
+    const yearlyTotal = yearlySum;
 
     monthlyEl.textContent = `¥${monthlyTotal.toLocaleString()}`;
     yearlyEl.textContent = `¥${yearlyTotal.toLocaleString()}`;
