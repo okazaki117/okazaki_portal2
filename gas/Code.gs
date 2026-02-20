@@ -57,6 +57,15 @@ function setupSheets() {
     shoppingSheet.setFrozenRows(1);
   }
 
+  // サブスクリプションシート
+  let subscriptionSheet = ss.getSheetByName('Subscriptions');
+  if (!subscriptionSheet) {
+    subscriptionSheet = ss.insertSheet('Subscriptions');
+    subscriptionSheet.appendRow(['id', 'name', 'price', 'billingCycle', 'account', 'status', 'deleted', 'createdAt', 'updatedAt']);
+    subscriptionSheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+    subscriptionSheet.setFrozenRows(1);
+  }
+
   // 設定シート（トップ画像のfileIdなどを保存）
   let settingsSheet = ss.getSheetByName('Settings');
   if (!settingsSheet) {
@@ -165,6 +174,17 @@ function handleRequest(e) {
         result = updateShopping(data);
         break;
 
+      // === サブスクリスト ===
+      case 'getSubscriptions':
+        result = getSubscriptions();
+        break;
+      case 'addSubscription':
+        result = addSubscription(data);
+        break;
+      case 'updateSubscription':
+        result = updateSubscription(data);
+        break;
+
       // === トップ画像 ===
       case 'uploadTopImage':
         result = uploadTopImage(data);
@@ -233,6 +253,12 @@ function buildRowFromHeaders(headers, data, options) {
       const num = Number(value);
       if (!isNaN(num)) return num;
       return defaults.year !== undefined ? defaults.year : num;
+    }
+
+    if (header === 'price') {
+      const num = Number(value);
+      if (!isNaN(num)) return num;
+      return defaults.price !== undefined ? defaults.price : num;
     }
 
     if (Object.prototype.hasOwnProperty.call(defaults, header)) {
@@ -478,6 +504,80 @@ function updateShopping(item) {
   }
 
   return { success: false, error: 'Shopping item not found: ' + item.id };
+}
+
+/* ============================================
+   サブスクリスト関連
+============================================ */
+
+function getSubscriptions() {
+  const sheet = getSpreadsheet().getSheetByName('Subscriptions');
+  if (!sheet) {
+    return { success: false, error: 'Subscriptions sheet not found. Run setupSheets() first.' };
+  }
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    return { success: true, data: [] };
+  }
+
+  const headers = data[0];
+  const items = data.slice(1).map(row => {
+    const item = {};
+    headers.forEach((header, index) => {
+      if (header === 'deleted') {
+        item[header] = row[index] === true || row[index] === 'true';
+      } else if (header === 'price') {
+        item[header] = Number(row[index]);
+      } else {
+        item[header] = row[index];
+      }
+    });
+    return item;
+  });
+
+  return { success: true, data: items };
+}
+
+function addSubscription(data) {
+  if (!data || !data.id || !data.name) {
+    return { success: false, error: 'Invalid subscription data' };
+  }
+
+  const sheet = getSpreadsheet().getSheetByName('Subscriptions');
+  if (!sheet) {
+    return { success: false, error: 'Subscriptions sheet not found' };
+  }
+
+  const headers = getSheetHeaders(sheet);
+  const row = buildRowFromHeaders(headers, data);
+  sheet.appendRow(row);
+
+  return { success: true, id: data.id };
+}
+
+function updateSubscription(data) {
+  if (!data || !data.id) {
+    return { success: false, error: 'Invalid subscription data' };
+  }
+
+  const sheet = getSpreadsheet().getSheetByName('Subscriptions');
+  if (!sheet) {
+    return { success: false, error: 'Subscriptions sheet not found' };
+  }
+
+  const dataRange = sheet.getDataRange().getValues();
+  const headers = dataRange[0] || [];
+
+  for (let i = 1; i < dataRange.length; i++) {
+    if (dataRange[i][0] === data.id) {
+      const row = buildRowFromHeaders(headers, data);
+      sheet.getRange(i + 1, 1, 1, headers.length).setValues([row]);
+      return { success: true };
+    }
+  }
+
+  return { success: false, error: 'Subscription not found: ' + data.id };
 }
 
 /* ============================================

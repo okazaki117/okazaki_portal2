@@ -31,6 +31,7 @@ const CONFIG = {
     CACHE_KEY_MEMOS: 'portal_cache_memos',
     CACHE_KEY_WISHES: 'portal_cache_wishes',
     CACHE_KEY_SHOPPING: 'portal_cache_shopping',
+    CACHE_KEY_SUBSCRIPTIONS: 'portal_cache_subscriptions',
     CACHE_KEY_TOP_IMAGE: 'portal_cache_top_image',
 
     // デバッグモード
@@ -46,8 +47,11 @@ const state = {
     memos: [],
     wishes: [],
     shopping: [],
+    subscriptions: [],
     wishFilter: 'all',
     shoppingFilter: 'soon',
+    subscriptionFilter: 'active',
+    editingSubscriptionId: null,
     isLoading: false
 };
 
@@ -63,6 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // イベントリスナーを設定
     setupEventListeners();
+
+    // ヘッダー初期表示
+    updateHeader(state.currentPage);
 
     // 初期データを読み込み
     loadPageData('portal');
@@ -201,6 +208,7 @@ function clearCache() {
     localStorage.removeItem(CONFIG.CACHE_KEY_MEMOS);
     localStorage.removeItem(CONFIG.CACHE_KEY_WISHES);
     localStorage.removeItem(CONFIG.CACHE_KEY_SHOPPING);
+    localStorage.removeItem(CONFIG.CACHE_KEY_SUBSCRIPTIONS);
     localStorage.removeItem(CONFIG.CACHE_KEY_TOP_IMAGE);
     log('Cache cleared');
 }
@@ -361,6 +369,7 @@ function updateHeader(pageName) {
         memo: '共有メモ',
         wishlist: '今年やりたいこと',
         shopping: '買い物リスト',
+        subscriptions: 'サブスクリスト',
         settings: '設定'
     };
 
@@ -370,6 +379,11 @@ function updateHeader(pageName) {
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
         backBtn.classList.toggle('hidden', pageName === 'portal');
+    }
+
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.classList.toggle('hidden', pageName !== 'portal');
     }
 }
 
@@ -390,6 +404,9 @@ async function loadPageData(pageName) {
             break;
         case 'shopping':
             await loadShopping();
+            break;
+        case 'subscriptions':
+            await loadSubscriptions();
             break;
         case 'settings':
             loadSettings();
@@ -1006,6 +1023,262 @@ async function moveShoppingCategory(id, newCategory) {
 }
 
 /* ============================================
+   サブスクリスト
+============================================ */
+
+async function loadSubscriptions() {
+    if (!CONFIG.API_URL) {
+        state.subscriptions = [];
+        renderSubscriptions();
+        showToast('API URLを設定してください');
+        return;
+    }
+
+    const cached = loadCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS);
+    if (cached) {
+        state.subscriptions = cached;
+        renderSubscriptions();
+    } else {
+        showLoading(true);
+    }
+
+    const result = await apiRequest('getSubscriptions');
+    showLoading(false);
+
+    if (result && result.data) {
+        state.subscriptions = result.data;
+        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, result.data);
+        renderSubscriptions();
+    } else if (!cached) {
+        renderSubscriptions();
+    }
+}
+
+function renderSubscriptions() {
+    const listEl = document.getElementById('subscription-list');
+    const monthlyEl = document.getElementById('subscription-monthly-total');
+    const yearlyEl = document.getElementById('subscription-yearly-total');
+
+    if (!listEl || !monthlyEl || !yearlyEl) return;
+
+    const activeItems = state.subscriptions.filter(s => !s.deleted && s.status === 'active');
+    const rawMonthly = activeItems.reduce((sum, s) => {
+        const price = Number(s.price) || 0;
+        if (s.billingCycle === 'yearly') {
+            return sum + price / 12;
+        }
+        return sum + price;
+    }, 0);
+
+    const monthlyTotal = Math.floor(rawMonthly);
+    const yearlyTotal = monthlyTotal * 12;
+
+    monthlyEl.textContent = `¥${monthlyTotal.toLocaleString()}`;
+    yearlyEl.textContent = `¥${yearlyTotal.toLocaleString()}`;
+
+    if (!CONFIG.API_URL) {
+        listEl.innerHTML = '<p class="empty-message">設定画面でAPI URLを入力してください</p>';
+        return;
+    }
+
+    const filter = state.subscriptionFilter;
+    let filtered = state.subscriptions.filter(s => !s.deleted && s.status === filter);
+    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    if (filtered.length === 0) {
+        const message = filter === 'active' ? '利用中のサブスクはありません' : '解約済みのサブスクはありません';
+        listEl.innerHTML = `<p class="empty-message">${message}</p>`;
+        return;
+    }
+
+    listEl.innerHTML = filtered.map(item => {
+        const cycleLabel = item.billingCycle === 'yearly' ? '年額' : '月額';
+        const accountText = item.account ? ` ・ ${escapeHtml(item.account)}` : '';
+        const priceText = `¥${Number(item.price || 0).toLocaleString()}`;
+        const statusBtn = filter === 'active'
+            ? `<button class="action-btn cancel-btn" onclick="toggleSubscriptionStatus('${item.id}')">解約</button>`
+            : `<button class="action-btn resume-btn" onclick="toggleSubscriptionStatus('${item.id}')">再開</button>`;
+
+        return `
+            <div class="subscription-item ${item.status === 'cancelled' ? 'cancelled' : ''}" data-id="${item.id}">
+                <div class="subscription-header">
+                    <span class="subscription-name">${escapeHtml(item.name)}</span>
+                    <span class="subscription-price">${priceText}</span>
+                </div>
+                <div class="subscription-meta">${cycleLabel}${accountText}</div>
+                <div class="subscription-actions">
+                    <button class="action-btn" onclick="openSubscriptionModal('${item.id}')">編集</button>
+                    ${statusBtn}
+                    <button class="action-btn delete-btn" onclick="deleteSubscription('${item.id}')">×</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function openSubscriptionModal(id = null) {
+    const modal = document.getElementById('subscription-modal');
+    const title = document.getElementById('subscription-modal-title');
+    const nameInput = document.getElementById('subscription-name');
+    const priceInput = document.getElementById('subscription-price');
+    const billingSelect = document.getElementById('subscription-billing');
+    const accountInput = document.getElementById('subscription-account');
+    const saveBtn = document.getElementById('subscription-save-btn');
+
+    if (!modal || !title || !nameInput || !priceInput || !billingSelect || !accountInput || !saveBtn) return;
+
+    const subscription = id ? state.subscriptions.find(s => s.id === id) : null;
+    state.editingSubscriptionId = subscription ? subscription.id : null;
+
+    if (subscription) {
+        title.textContent = 'サブスクを編集';
+        saveBtn.textContent = '保存';
+        nameInput.value = subscription.name || '';
+        priceInput.value = subscription.price !== undefined ? String(subscription.price) : '';
+        billingSelect.value = subscription.billingCycle || 'monthly';
+        accountInput.value = subscription.account || '';
+    } else {
+        title.textContent = 'サブスクを追加';
+        saveBtn.textContent = '追加';
+        nameInput.value = '';
+        priceInput.value = '';
+        billingSelect.value = 'monthly';
+        accountInput.value = '';
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeSubscriptionModal() {
+    const modal = document.getElementById('subscription-modal');
+    if (modal) modal.classList.add('hidden');
+    state.editingSubscriptionId = null;
+}
+
+async function saveSubscription() {
+    const nameInput = document.getElementById('subscription-name');
+    const priceInput = document.getElementById('subscription-price');
+    const billingSelect = document.getElementById('subscription-billing');
+    const accountInput = document.getElementById('subscription-account');
+
+    if (!nameInput || !priceInput || !billingSelect || !accountInput) return;
+
+    const name = nameInput.value.trim();
+    const priceValue = Number(priceInput.value);
+    const billingCycle = billingSelect.value;
+    const account = accountInput.value.trim();
+
+    if (!name) {
+        showToast('サービス名を入力してください');
+        return;
+    }
+
+    if (!Number.isFinite(priceValue) || priceValue <= 0) {
+        showToast('金額を正しく入力してください');
+        return;
+    }
+
+    const now = new Date().toISOString();
+    const editingId = state.editingSubscriptionId;
+
+    if (!editingId) {
+        const newItem = {
+            id: generateId(),
+            name: name,
+            price: priceValue,
+            billingCycle: billingCycle,
+            account: account,
+            status: 'active',
+            deleted: false,
+            createdAt: now,
+            updatedAt: now
+        };
+
+        state.subscriptions.unshift(newItem);
+        renderSubscriptions();
+        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+        closeSubscriptionModal();
+
+        const result = await apiRequest('addSubscription', newItem);
+        if (result) {
+            showToast('追加しました');
+        } else {
+            state.subscriptions = state.subscriptions.filter(s => s.id !== newItem.id);
+            renderSubscriptions();
+            saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+            showToast('追加に失敗しました');
+        }
+        return;
+    }
+
+    const target = state.subscriptions.find(s => s.id === editingId);
+    if (!target) return;
+
+    const backup = { ...target };
+    target.name = name;
+    target.price = priceValue;
+    target.billingCycle = billingCycle;
+    target.account = account;
+    target.updatedAt = now;
+
+    renderSubscriptions();
+    saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+    closeSubscriptionModal();
+
+    const result = await apiRequest('updateSubscription', target);
+    if (result) {
+        showToast('保存しました');
+    } else {
+        Object.assign(target, backup);
+        renderSubscriptions();
+        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+        showToast('保存に失敗しました');
+    }
+}
+
+async function toggleSubscriptionStatus(id) {
+    const item = state.subscriptions.find(s => s.id === id);
+    if (!item) return;
+
+    const wasStatus = item.status;
+    item.status = item.status === 'active' ? 'cancelled' : 'active';
+    item.updatedAt = new Date().toISOString();
+
+    renderSubscriptions();
+    saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+
+    const result = await apiRequest('updateSubscription', item);
+    if (!result) {
+        item.status = wasStatus;
+        renderSubscriptions();
+        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+        showToast('更新に失敗しました');
+    }
+}
+
+async function deleteSubscription(id) {
+    const item = state.subscriptions.find(s => s.id === id);
+    if (!item) return;
+
+    if (!confirm('このサブスクを削除しますか？')) return;
+
+    item.deleted = true;
+    item.updatedAt = new Date().toISOString();
+
+    renderSubscriptions();
+    saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+    showToast('削除しました');
+
+    const result = await apiRequest('updateSubscription', item);
+    if (!result) {
+        item.deleted = false;
+        renderSubscriptions();
+        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
+        showToast('削除に失敗しました');
+    }
+}
+
+/* ============================================
    設定画面
 ============================================ */
 
@@ -1050,6 +1323,7 @@ function clearDataCache() {
     state.memos = [];
     state.wishes = [];
     state.shopping = [];
+    state.subscriptions = [];
     showToast('キャッシュをクリアしました。画面を更新します...');
 
     // 少し待ってからポータルに戻ってデータを再取得
@@ -1070,6 +1344,7 @@ function clearAllSettings() {
     state.memos = [];
     state.wishes = [];
     state.shopping = [];
+    state.subscriptions = [];
 
     loadSettings();
     showToast('すべての設定をクリアしました');
@@ -1092,6 +1367,12 @@ function setupEventListeners() {
     const backBtn = document.getElementById('back-btn');
     if (backBtn) {
         backBtn.addEventListener('click', () => navigateTo('portal'));
+    }
+
+    // 設定ボタン（ヘッダー）
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => navigateTo('settings'));
     }
 
     // 更新ボタン
@@ -1182,6 +1463,48 @@ function setupEventListeners() {
             renderShopping();
         });
     });
+
+    // サブスクリスト：フィルター
+    document.querySelectorAll('#page-subscriptions .filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#page-subscriptions .filter-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            state.subscriptionFilter = tab.dataset.filter;
+            renderSubscriptions();
+        });
+    });
+
+    // サブスクリスト：追加
+    const subscriptionAddBtn = document.getElementById('subscription-add-btn');
+    if (subscriptionAddBtn) {
+        subscriptionAddBtn.addEventListener('click', () => openSubscriptionModal());
+    }
+
+    // サブスクリスト：モーダル操作
+    const subscriptionCancelBtn = document.getElementById('subscription-cancel-btn');
+    if (subscriptionCancelBtn) {
+        subscriptionCancelBtn.addEventListener('click', closeSubscriptionModal);
+    }
+
+    const subscriptionSaveBtn = document.getElementById('subscription-save-btn');
+    if (subscriptionSaveBtn) {
+        subscriptionSaveBtn.addEventListener('click', saveSubscription);
+    }
+
+    const subscriptionForm = document.getElementById('subscription-form');
+    if (subscriptionForm) {
+        subscriptionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveSubscription();
+        });
+    }
+
+    const subscriptionModal = document.getElementById('subscription-modal');
+    if (subscriptionModal) {
+        subscriptionModal.addEventListener('click', (e) => {
+            if (e.target === subscriptionModal) closeSubscriptionModal();
+        });
+    }
 
     // 設定：保存
     const saveSettingsBtn = document.getElementById('save-settings');

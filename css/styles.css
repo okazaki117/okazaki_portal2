@@ -29,6 +29,7 @@
     --wishlist-color: #FF7043;
     --shopping-color: #66BB6A;
     --settings-color: #78909C;
+    --subscription-color: #26A69A;
 
     /* ステータスカラー */
     --status-not-started: #E0E0E0;
@@ -116,6 +117,12 @@ body {
     font-weight: 600;
     flex: 1;
     text-align: center;
+}
+
+.header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
 }
 
 .header-btn {
@@ -284,6 +291,10 @@ body {
 
 .settings-icon {
     background: linear-gradient(135deg, var(--settings-color), #90A4AE);
+}
+
+.subscription-icon {
+    background: linear-gradient(135deg, var(--subscription-color), #4DB6AC);
 }
 
 .app-name {
@@ -647,6 +658,178 @@ body {
 }
 
 /* ============================================
+   サブスクリスト
+============================================ */
+.card-bg {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.subscription-summary {
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.subscription-summary .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+}
+
+.subscription-summary .summary-row + .summary-row {
+    margin-top: 8px;
+}
+
+.subscription-summary .summary-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.subscription-add-btn {
+    width: 100%;
+    margin-bottom: 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.subscription-add-btn:active {
+    background: var(--primary-dark);
+}
+
+.subscription-item {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.subscription-item.cancelled {
+    opacity: 0.6;
+}
+
+.subscription-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.subscription-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    flex: 1;
+}
+
+.subscription-price {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.subscription-meta {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
+.subscription-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.subscription-actions .action-btn {
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--bg-color);
+}
+
+.subscription-actions .action-btn:active {
+    background: #e9ecef;
+}
+
+.subscription-actions .action-btn.cancel-btn {
+    color: #E57373;
+}
+
+.subscription-actions .action-btn.resume-btn {
+    color: #2E7D32;
+}
+
+/* モーダル */
+.subscription-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1200;
+    padding: 20px;
+}
+
+.subscription-modal.hidden {
+    display: none;
+}
+
+.subscription-modal-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+}
+
+.subscription-modal-card h2 {
+    font-size: 1rem;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+}
+
+.subscription-modal-card label {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.subscription-modal-card input,
+.subscription-modal-card select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-bottom: 12px;
+    background: white;
+}
+
+.subscription-modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.subscription-modal-actions .primary-btn,
+.subscription-modal-actions .secondary-btn {
+    flex: 1;
+}
+
+/* ============================================
    設定画面
 ============================================ */
 .settings-section {
@@ -829,6 +1012,14 @@ body {
     .filter-tab {
         font-size: 0.75rem;
         padding: 8px 4px;
+    }
+
+    .subscription-summary .summary-value {
+        font-size: 1rem;
+    }
+
+    .subscription-actions {
+        gap: 6px;
     }
 }
 

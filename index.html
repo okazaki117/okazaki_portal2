@@ -21,7 +21,7 @@
     <title>家族ポータル</title>
 
     <!-- スタイルシート -->
-    <link rel="stylesheet" href="./css/styles.css?v=2.3.2">
+    <link rel="stylesheet" href="./css/styles.css?v=2.4.0">
 </head>
 <body>
     <!-- ============================================
@@ -40,12 +40,20 @@
                 </svg>
             </button>
             <h1 id="page-title">家族ポータル</h1>
-            <button id="refresh-btn" class="header-btn" aria-label="更新">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M23 4v6h-6M1 20v-6h6"/>
-                    <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-                </svg>
-            </button>
+            <div class="header-actions">
+                <button id="settings-btn" class="header-btn hidden" aria-label="設定">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                </button>
+                <button id="refresh-btn" class="header-btn" aria-label="更新">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6"/>
+                        <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+                    </svg>
+                </button>
+            </div>
         </header>
 
         <!-- ============================================
@@ -120,19 +128,21 @@
                         <span class="app-name">買い物リスト</span>
                     </button>
 
-                    <button class="app-card" data-page="settings">
-                        <div class="app-icon settings-icon">
+                    <button class="app-card" data-page="subscriptions">
+                        <div class="app-icon subscription-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="3"/>
-                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                                <path d="M17 1l4 4-4 4"/>
+                                <path d="M7 23l-4-4 4-4"/>
+                                <path d="M20 5H9a5 5 0 00-5 5v0"/>
+                                <path d="M4 19h11a5 5 0 005-5v0"/>
                             </svg>
                         </div>
-                        <span class="app-name">設定</span>
+                        <span class="app-name">サブスクリスト</span>
                     </button>
                 </div>
 
                 <!-- バージョン表記 -->
-                <p class="version-footer">v2.3.2</p>
+                <p class="version-footer">v2.4.0</p>
             </section>
 
             <!-- ========== 共有メモアプリ ========== -->
@@ -208,6 +218,35 @@
                 </div>
             </section>
 
+            <!-- ========== サブスクリスト ========== -->
+            <section id="page-subscriptions" class="page">
+                <!-- 合計表示 -->
+                <div class="subscription-summary card-bg">
+                    <div class="summary-row">
+                        <span class="summary-label">月額合計</span>
+                        <span id="subscription-monthly-total" class="summary-value">¥0</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">年額合計</span>
+                        <span id="subscription-yearly-total" class="summary-value">¥0</span>
+                    </div>
+                </div>
+
+                <!-- 追加ボタン -->
+                <button id="subscription-add-btn" class="subscription-add-btn">＋ サブスクを追加</button>
+
+                <!-- フィルタータブ -->
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="active">利用中</button>
+                    <button class="filter-tab" data-filter="cancelled">解約済み</button>
+                </div>
+
+                <!-- リスト -->
+                <div id="subscription-list" class="item-list">
+                    <p class="empty-message">読み込み中...</p>
+                </div>
+            </section>
+
             <!-- ========== 設定画面 ========== -->
             <section id="page-settings" class="page">
                 <div class="settings-section">
@@ -260,7 +299,7 @@
 
                 <div class="settings-section">
                     <h2 class="section-title">このアプリについて</h2>
-                    <p class="app-version">家族ポータル v2.3.2</p>
+                    <p class="app-version">家族ポータル v2.4.0</p>
                     <p class="setting-hint">夫婦2人で情報を共有するためのシンプルなポータルアプリです。</p>
                 </div>
             </section>
@@ -280,8 +319,38 @@
         <div id="toast" class="toast hidden"></div>
     </div>
 
+    <!-- ============================================
+         サブスクリスト モーダル
+    ============================================ -->
+    <div id="subscription-modal" class="subscription-modal hidden">
+        <div class="subscription-modal-card">
+            <h2 id="subscription-modal-title">サブスクを追加</h2>
+            <form id="subscription-form">
+                <label for="subscription-name">サービス名</label>
+                <input type="text" id="subscription-name" placeholder="例: Netflix" required>
+
+                <label for="subscription-price">金額（税込）</label>
+                <input type="number" id="subscription-price" placeholder="例: 1980" inputmode="numeric" required>
+
+                <label for="subscription-billing">課金周期</label>
+                <select id="subscription-billing" required>
+                    <option value="monthly">月額</option>
+                    <option value="yearly">年額</option>
+                </select>
+
+                <label for="subscription-account">引き落とし口座</label>
+                <input type="text" id="subscription-account" placeholder="例: 楽天カード">
+
+                <div class="subscription-modal-actions">
+                    <button type="button" id="subscription-cancel-btn" class="secondary-btn">キャンセル</button>
+                    <button type="button" id="subscription-save-btn" class="primary-btn">追加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- JavaScript（単一ファイルに統合）-->
     <!-- v2.2.5: ポータルにバージョン表記追加 -->
-    <script src="./js/app.js?v=2.3.2"></script>
+    <script src="./js/app.js?v=2.4.0"></script>
 </body>
 </html>
