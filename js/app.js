@@ -1118,7 +1118,7 @@ function renderSubscriptions() {
                     <span class="subscription-name">${escapeHtml(item.name)}</span>
                     <span class="subscription-price">${priceText}</span>
                 </div>
-                <div class="subscription-meta">${cycleLabel}${renewalText}${accountText}</div>
+                <div class="subscription-meta"><span class="cycle-badge cycle-${item.billingCycle || 'monthly'}">${cycleLabel}</span>${renewalText}${accountText}</div>
                 <div class="subscription-actions">
                     <button class="action-btn" onclick="openSubscriptionModal('${item.id}')">編集</button>
                     ${statusBtn}
