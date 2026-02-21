@@ -1107,7 +1107,18 @@ function renderSubscriptions() {
         const cycleLabel = cycleLabels[item.billingCycle] || '月額';
         const renewalText = item.renewalTiming ? ` ・ ${escapeHtml(item.renewalTiming)}` : '';
         const accountText = item.account ? ` ・ ${escapeHtml(item.account)}` : '';
-        const priceText = `¥${Number(item.price || 0).toLocaleString()}`;
+        const priceNum = Number(item.price || 0);
+        const priceText = `¥${priceNum.toLocaleString()}`;
+        
+        let monthlyEquivalentText = '';
+        if (item.billingCycle === 'yearly') {
+            monthlyEquivalentText = `<span class="subscription-price-monthly">（月額 約¥${Math.floor(priceNum / 12).toLocaleString()}）</span>`;
+        } else if (item.billingCycle === 'semi-annual') {
+            monthlyEquivalentText = `<span class="subscription-price-monthly">（月額 約¥${Math.floor(priceNum / 6).toLocaleString()}）</span>`;
+        } else if (item.billingCycle === 'quarterly') {
+            monthlyEquivalentText = `<span class="subscription-price-monthly">（月額 約¥${Math.floor(priceNum / 3).toLocaleString()}）</span>`;
+        }
+
         const statusBtn = filter === 'active'
             ? `<button class="action-btn cancel-btn" onclick="toggleSubscriptionStatus('${item.id}')">解約</button>`
             : `<button class="action-btn resume-btn" onclick="toggleSubscriptionStatus('${item.id}')">再開</button>`;
@@ -1116,7 +1127,10 @@ function renderSubscriptions() {
             <div class="subscription-item ${item.status === 'cancelled' ? 'cancelled' : ''}" data-id="${item.id}">
                 <div class="subscription-header">
                     <span class="subscription-name">${escapeHtml(item.name)}</span>
-                    <span class="subscription-price">${priceText}</span>
+                    <div class="subscription-price-wrapper">
+                        <span class="subscription-price">${priceText}</span>
+                        ${monthlyEquivalentText}
+                    </div>
                 </div>
                 <div class="subscription-meta"><span class="cycle-badge cycle-${item.billingCycle || 'monthly'}">${cycleLabel}</span>${renewalText}${accountText}</div>
                 <div class="subscription-actions">
