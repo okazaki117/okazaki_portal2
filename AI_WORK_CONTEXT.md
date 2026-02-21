@@ -79,6 +79,8 @@ okazaki_portal2/
 
 #### Antigravity の場合
 設計方針についてユーザーの合意を得た後、直接 `main` ブランチへ commit / push して構いません。
+**※注意（WSL環境でのGit操作について）**
+Windows側のGitからWSLパス（`\\wsl.localhost\...`）を操作すると「dubious ownership」エラーが発生するため、**Git操作は必ずWSL内（例: `wsl -e sh -c "cd /path/to/project && git ..."`）で行う**こと。また、マージ等が発生する操作は対話エディタが起動してプロセスが停止するのを防ぐため、必ず非対話オプション（`-m` や `--no-edit` など）を付与すること。
 
 #### Claude Code の場合
 Claude は原則として実装を行いませんが、以下の条件を **すべて** 満たす場合に限り、commit / push を許可します。
