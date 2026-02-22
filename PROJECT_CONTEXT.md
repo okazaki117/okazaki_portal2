@@ -207,7 +207,7 @@ okazaki_portal/
 | 項目 | 内容 |
 |------|------|
 | 開発PC | Windows |
-| エディタ | Claude Code (CLI) |
+| エディタ | Antigravity |
 | ブラウザ確認 | Chrome / Safari (iPhone実機) |
 | GAS編集 | Google Apps Script エディタ（ブラウザ） |
 

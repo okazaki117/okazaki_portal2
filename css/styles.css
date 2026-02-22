@@ -39,9 +39,9 @@
 
     /* その他 */
     --border-color: #E0E0E0;
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --radius: 12px;
-    --radius-sm: 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* より柔らかくモダンな影 */
+    --radius: 16px; /* 角丸を少し大きく */
+    --radius-sm: 10px;
 
     /* セーフエリア（iPhone用） */
     --safe-top: env(safe-area-inset-top);
