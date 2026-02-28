@@ -311,6 +311,14 @@ function addMemo(memo) {
     return { success: false, error: 'Memos sheet not found' };
   }
 
+  // 重複チェック
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === memo.id) {
+      return { success: true, id: memo.id, note: 'Already exists' };
+    }
+  }
+
   const headers = getSheetHeaders(sheet);
   const row = buildRowFromHeaders(headers, memo);
   sheet.appendRow(row);
@@ -383,6 +391,14 @@ function addWish(wish) {
   const sheet = getSpreadsheet().getSheetByName('Wishes');
   if (!sheet) {
     return { success: false, error: 'Wishes sheet not found' };
+  }
+
+  // 重複チェック
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === wish.id) {
+      return { success: true, id: wish.id, note: 'Already exists' };
+    }
   }
 
   const headers = getSheetHeaders(sheet);
@@ -465,6 +481,14 @@ function addShopping(item) {
   const sheet = getSpreadsheet().getSheetByName('Shopping');
   if (!sheet) {
     return { success: false, error: 'Shopping sheet not found' };
+  }
+
+  // 重複チェック
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === item.id) {
+      return { success: true, id: item.id, note: 'Already exists' };
+    }
   }
 
   const headers = getSheetHeaders(sheet);
@@ -554,6 +578,14 @@ function addSubscription(data) {
   const sheet = getSpreadsheet().getSheetByName('Subscriptions');
   if (!sheet) {
     return { success: false, error: 'Subscriptions sheet not found' };
+  }
+
+  // 重複チェック
+  const dataRange = sheet.getDataRange().getValues();
+  for (let i = 1; i < dataRange.length; i++) {
+    if (dataRange[i][0] === data.id) {
+      return { success: true, id: data.id, note: 'Already exists' };
+    }
   }
 
   const headers = getSheetHeaders(sheet);

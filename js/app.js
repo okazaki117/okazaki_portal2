@@ -1,6 +1,6 @@
 /**
  * ============================================
- * 家族ポータル - メインアプリケーション v2.2
+ * 家族ポータル - メインアプリケーション v2.5.4
  *
  * v2.2 修正点：
  * - ローカルキャッシュ導入（体感速度改善）
@@ -153,6 +153,20 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * 配列からIDの重複を排除する（最初の要素を優先）
+ */
+function deduplicateById(arr) {
+    if (!Array.isArray(arr)) return arr;
+    const seen = new Set();
+    return arr.filter(item => {
+        if (!item || !item.id) return true;
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+    });
 }
 
 /* ============================================
@@ -487,8 +501,8 @@ async function loadMemos() {
     showLoading(false);
 
     if (result && result.data) {
-        state.memos = result.data;
-        saveCache(CONFIG.CACHE_KEY_MEMOS, result.data);
+        state.memos = deduplicateById(result.data);
+        saveCache(CONFIG.CACHE_KEY_MEMOS, state.memos);
         renderMemos();
     }
 }
@@ -648,8 +662,8 @@ async function loadWishes() {
     showLoading(false);
 
     if (result && result.data) {
-        state.wishes = result.data;
-        saveCache(CONFIG.CACHE_KEY_WISHES, result.data);
+        state.wishes = deduplicateById(result.data);
+        saveCache(CONFIG.CACHE_KEY_WISHES, state.wishes);
         renderWishes();
     }
 }
@@ -840,8 +854,8 @@ async function loadShopping() {
     showLoading(false);
 
     if (result && result.data) {
-        state.shopping = result.data;
-        saveCache(CONFIG.CACHE_KEY_SHOPPING, result.data);
+        state.shopping = deduplicateById(result.data);
+        saveCache(CONFIG.CACHE_KEY_SHOPPING, state.shopping);
         renderShopping();
     }
 }
@@ -1046,8 +1060,8 @@ async function loadSubscriptions() {
     showLoading(false);
 
     if (result && result.data) {
-        state.subscriptions = result.data;
-        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, result.data);
+        state.subscriptions = deduplicateById(result.data);
+        saveCache(CONFIG.CACHE_KEY_SUBSCRIPTIONS, state.subscriptions);
         renderSubscriptions();
     } else if (!cached) {
         renderSubscriptions();
@@ -1109,7 +1123,7 @@ function renderSubscriptions() {
         const accountText = item.account ? ` ・ ${escapeHtml(item.account)}` : '';
         const priceNum = Number(item.price || 0);
         const priceText = `¥${priceNum.toLocaleString()}`;
-        
+
         let monthlyEquivalentText = '';
         if (item.billingCycle === 'yearly') {
             monthlyEquivalentText = `<span class="subscription-price-monthly">（月額 約¥${Math.floor(priceNum / 12).toLocaleString()}）</span>`;
